@@ -1,0 +1,28 @@
+# Graded settings: do not edit. Every graded run reads this file.
+# Each setting has a short note above it.
+
+# Annual yield of the 13-week Treasury bill (0.0376 means 3.76 percent per year). The report
+# converts it to a continuously compounded risk-free rate, which prices the calls in the model,
+# grows each premium until expiration, and gives the cash benchmark.
+# Source: the mean investment rate of the 13-week Treasury bills auctioned from 2026-04-13 to
+# 2026-08-24 (20 auctions), the same rate as PS4.
+risk_free_rate = 0.0376
+
+# Term of the 13-week Treasury bill (years), used to convert its yield to a continuously
+# compounded rate.
+bill_term = 0.2493150684931507
+
+# How many simulated share price paths the model draws for each ticker.
+number_of_paths = 10000
+
+# Seed for the random number generator, so every run gives the same paths.
+seed = 5660
+
+# Strikes, as multiples of the share price at the start of each month (K/S), for the model's
+# strike-choice table. The fund sells one call per month at each of these strikes.
+moneyness_grid = [1.00, 1.02, 1.05, 1.10]
+
+# Market benchmark for the report: the same money bought into this fund at the close on each
+# ticker's first entry date and sold at the close on its last expiration date. SPY is a fund
+# that follows the S&P 500 index of large US companies.
+benchmark_ticker = "SPY"
