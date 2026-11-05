@@ -73,7 +73,71 @@ function leg_iv(row, role::Symbol)::Float64
 end
 
 """
-    ticker_rolls(trades::DataFrame, parameters::DataFrame) -> Vector{NamedTuple}
+    load_strike_increments(path::AbstractString, tickers) -> Dict{String,Float64}
+
+Read the spacing of each ticker's listed strikes, `data/strike_increments.csv`.
+
+### Arguments
+
+- `path`: Location of the file, with the columns `ticker` and `strike_increment` (USD).
+- `tickers`: The tickers that need an increment.
+
+### Returns
+
+- A `Dict` from ticker to its strike increment (USD). Throws an `ArgumentError`
+  when the columns differ, an increment is not positive, or a ticker is missing.
+"""
+function load_strike_increments(path::AbstractString, tickers)::Dict{String,Float64}
+
+    # Read the file and check its columns -
+    table = CSV.read(path, DataFrame; stringtype = String);
+    names(table) == ["ticker", "strike_increment"] ||
+        throw(ArgumentError("The strike increments must have the columns ticker and strike_increment."));
+
+    # Check each increment, and that every ticker has one -
+    increments = Dict{String,Float64}();
+    for row in eachrow(table)
+        (row.strike_increment isa Real && isfinite(row.strike_increment) && row.strike_increment > 0) ||
+            throw(ArgumentError("The strike increment of $(row.ticker) must be a positive number."));
+        increments[String(row.ticker)] = Float64(row.strike_increment);
+    end
+    for ticker in tickers
+        haskey(increments, ticker) || throw(ArgumentError("The strike increments have no row for $(ticker)."));
+    end
+    return increments;
+end
+
+# The position of a price on a strike grid, snapped to the nearest grid line when it is within
+# rounding error of it, so that an exact multiple of the increment is not pushed to the next one.
+function _grid_position(price::Float64, increment::Float64)::Float64
+    q = price / increment;
+    r = round(q);
+    return abs(q - r) <= 1e-9 * max(1.0, abs(q)) ? r : q;
+end
+
+"""
+    listed_call_strike(target::Float64, increment::Float64) -> Float64
+
+The smallest strike on a grid of listed strikes `increment` apart that is at or
+above `target` (USD/share), as in the course example. For a call, this keeps the
+strike at or beyond the target.
+"""
+listed_call_strike(target::Float64, increment::Float64)::Float64 =
+    increment * ceil(_grid_position(target, increment));
+
+"""
+    listed_put_strike(target::Float64, increment::Float64) -> Float64
+
+The largest strike on a grid of listed strikes `increment` apart that is at or
+below `target` (USD/share). For a put, this keeps the strike at or beyond the
+target. When `target` is below one increment, it returns one increment, the
+lowest listed strike.
+"""
+listed_put_strike(target::Float64, increment::Float64)::Float64 =
+    increment * max(floor(_grid_position(target, increment)), 1.0);
+
+"""
+    ticker_rolls(trades::DataFrame, parameters::DataFrame, increments::AbstractDict) -> Vector{NamedTuple}
 
 Arrange each ticker's trades, in order of entry, into the fund's monthly roll.
 
@@ -81,20 +145,23 @@ Arrange each ticker's trades, in order of entry, into the fund's monthly roll.
 
 - `trades`: The trade table, from `load_trade_table`.
 - `parameters`: The trailing drift and volatility of each trade (`data/parameters.csv`).
+- `increments`: The spacing of each ticker's listed strikes, from `load_strike_increments`.
 
 ### Returns
 
 One `NamedTuple` per ticker, in alphabetical order, with:
 
-- `ticker`, `group`, `first_entry`, `last_expiration`, and `T`, the years from
-  the first entry to the last expiration (calendar days / 365).
+- `ticker`, `group`, `first_entry`, `last_expiration`, `T`, the years from
+  the first entry to the last expiration (calendar days / 365), and
+  `strike_increment`, the spacing of the ticker's listed strikes (USD).
 - `months`: one `NamedTuple` per trade with `entry`, `expiration`, `days`,
   `S_start` and `S_end` (the closes on the entry and expiration dates,
   USD/share), the sold call's strike `K_call`, prices `call_mid` and
   `call_bid`, and implied volatility `call_iv`, and the collar put's strike
-  `K_put`, prices `put_mid` and `put_ask`, and implied volatility `put_iv`.
-- `gaps`: the share-price ratios `S_start` of a trade over `S_end` of the one
-  before, for the days between an expiration and the next entry (usually none).
+  `K_put`, prices `put_mid` and `put_ask`, and implied volatility `put_iv`,
+  and `gap_days`, the calendar days from the previous trade's expiration to
+  this entry (0 for the first trade, and usually 0), when the fund holds only
+  its shares and cash.
 - `plan`: what the fund knew on its first entry date: `S0`, the first trade's
   time to expiration `term` (years, `days / 365`), the strikes as
   multiples of the share price (`call_moneyness`, `put_moneyness`), the
@@ -102,7 +169,7 @@ One `NamedTuple` per ticker, in alphabetical order, with:
   volatility `σ̂`, and the premiums as fractions of the share price
   (`call_fraction`, `put_fraction`).
 """
-function ticker_rolls(trades::DataFrame, parameters::DataFrame)::Vector{NamedTuple}
+function ticker_rolls(trades::DataFrame, parameters::DataFrame, increments::AbstractDict)::Vector{NamedTuple}
 
     # Initialize -
     by_id = Dict(p.trade_id => p for p in eachrow(parameters));
@@ -113,21 +180,15 @@ function ticker_rolls(trades::DataFrame, parameters::DataFrame)::Vector{NamedTup
         # This ticker's trades, in order of entry -
         rows = sort(trades[trades.ticker .== ticker, :], :entry);
         months = NamedTuple[];
-        for row in eachrow(rows)
-            push!(months, (entry = row.entry, expiration = row.expiration, days = row.days,
+        for (j, row) in enumerate(eachrow(rows))
+            gap_days = j == 1 ? 0 : Dates.value(row.entry - rows[j-1, :expiration]); # days between trades
+            gap_days >= 0 || throw(ArgumentError("$(ticker): a trade enters before the previous one expires."));
+            push!(months, (entry = row.entry, expiration = row.expiration, days = row.days, gap_days = gap_days,
                 S_start = row.S0, S_end = row.ST,
                 K_call = row.short_call_K, call_mid = row.short_call_mid, call_bid = row.short_call_bid,
                 call_iv = leg_iv(row, :short_call),
                 K_put = row.long_put_K, put_mid = row.long_put_mid, put_ask = row.long_put_ask,
                 put_iv = leg_iv(row, :long_put)));
-        end
-
-        # The days between one expiration and the next entry, when the fund holds only shares -
-        gaps = Float64[];
-        for j in 2:length(months)
-            if months[j].entry != months[j-1].expiration || months[j].S_start != months[j-1].S_end
-                push!(gaps, months[j].S_start / months[j-1].S_end);
-            end
         end
 
         # What the fund knew on its first entry date -
@@ -143,10 +204,12 @@ function ticker_rolls(trades::DataFrame, parameters::DataFrame)::Vector{NamedTup
 
         first_entry = months[1].entry;
         last_expiration = months[end].expiration;
+        total_days = Dates.value(last_expiration - first_entry);
+        sum(m.days + m.gap_days for m in months) == total_days ||
+            throw(ArgumentError("$(ticker): the trade days and the gaps do not add up to the roll's length."));
         push!(rolls, (ticker = ticker, group = first_row.group, first_entry = first_entry,
-            last_expiration = last_expiration,
-            T = Dates.value(last_expiration - first_entry) / PS5_CALENDAR_DAYS,
-            months = months, gaps = gaps, plan = plan));
+            last_expiration = last_expiration, T = total_days / PS5_CALENDAR_DAYS,
+            strike_increment = increments[ticker], months = months, plan = plan));
     end
 
     return rolls;

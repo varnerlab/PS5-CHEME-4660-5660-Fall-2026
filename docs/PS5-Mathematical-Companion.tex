@@ -10,7 +10,7 @@
 \newcommand{\Dfac}{\mathcal{D}}
 \newcommand{\one}{\mathbf{1}}
 
-\title{\texorpdfstring{{\vnheavy PS5}: Does a Covered Call\\Fund Beat Its Shares?}{PS5: Does a Covered Call Fund Beat Its Shares?}}
+\title{\texorpdfstring{{\vnheavy PS5}: Does a Covered Call\\Fund Beat Holding Its Shares?}{PS5: Does a Covered Call Fund Beat Holding Its Shares?}}
 \subtitle{CHEME 4/5660 Cornell University | Mathematical Companion}
 \author{Copyright Jeffrey Varner 2026. All Rights Reserved}
 \begin{document}
@@ -27,8 +27,9 @@ less the premiums, and gives up every gain above each month's strike. A collar
 limits each month's loss with a put, at the cost of that put's premium.
 
 \vspace{1em}
-\textbf{Simplifying assumptions.} One call (and, for the collar, one put) per
-share, measured per share. Every option is held to expiration and settled at
+\textbf{Simplifying assumptions.} One call contract (and, for the collar, one
+put contract) per 100 shares held, with the premiums in a cash account that
+earns, or on a loan pays, the risk-free rate. Every option is held to expiration and settled at
 the close that day, with no early exercise. We omit commissions, dividends,
 and taxes. The quotes come from an indicative data feed.
 \end{frame}
@@ -40,15 +41,17 @@ give up?
 \begin{itemize}\setlength{\itemsep}{0.15em}
 \item \hilite{Study 1: the promise.} Simulate six months of share prices for
 each ticker, price the calls on the binomial tree, and compare the
-distributions of the fund's and the shares' growth rates.
+distributions of the growth rates of the fund and of holding the shares and
+cash with no calls.
 \item \hilite{Study 2: what happened.} Replay each ticker's six real monthly
-calls at their market prices, and compare the fund with the shares, SPY, and
-cash over the same days.
+calls at their market prices, and compare the fund with holding the shares,
+SPY, and cash over the same days.
 \item \hilite{Study 3: the conclusion.} Decide what the fund gave up and what
 it got, and what one half-year of history can tell us.
 \end{itemize}
 As in the course example, $S_j$ is the share price at the start of month $j$,
-$K_j$ the strike of the call sold then, and $\Prem_{c,j}$ its premium (USD/share).
+$K_j$ the calls' strike, $\Prem_{c,j}$ their premium (USD/share), $N_S$ the
+fund's shares, and $C_j$ its cash (USD).
 \slidenote{Reading guide}{Both tracks do Studies 1--3. The collar fund on slide \pageref{fr:collar} is Advanced only.}
 \end{frame}
 
@@ -73,22 +76,20 @@ $\Delta t$, volatility $\sigma$, share price $S_j$, and rate $g_y$.
 \end{frame}
 
 \begin{frame}{One month of the covered call fund}
-The fund's wealth $W_j$ is its shares at $S_j$. It sells one call per share and
-holds the premium as cash, which grows by $\Dfac_{T,0}(g_y)=e^{g_y T}$ over the
-call's life $T$. At expiration the shares are worth $S_{j+1}$, less the call's payoff:
+The fund holds $N_S$ shares (one call contract per 100) and cash $C_j$, so
+$W_j=N_S S_j+C_j$ before it sells the calls. The premium goes into the cash,
+which grows by $\Dfac_{T,0}(g_y)=e^{g_y T}$ over the calls' life $T$; on exercise
+the fund sells its shares at $K_j$ and buys new ones at $S_{j+1}$:
+\[
+ C_{j+1}=\underbrace{\Dfac_{T,0}(g_y)\cdot\left(C_j+N_S\Prem_{c,j}\right)}_{\text{cash and premium grown}}
+ -\underbrace{N_S\left(S_{j+1}-K_j\right)^{+}}_{\text{new shares less strike}}.
+\]
+With $W_{j+1}=N_S S_{j+1}+C_{j+1}$ and $S_{j+1}-(S_{j+1}-K_j)^{+}=\min(S_{j+1},K_j)$:
 \[
  \frac{W_{j+1}}{W_j}
- =\frac{S_{j+1}-\left(S_{j+1}-K_j\right)^{+}+\Dfac_{T,0}(g_y)\cdot\Prem_{c,j}}{S_j}
- =\frac{\min\left(S_{j+1},K_j\right)+\Dfac_{T,0}(g_y)\cdot\Prem_{c,j}}{S_j}.
+ =\frac{N_S\left[\min\left(S_{j+1},K_j\right)+\Dfac_{T,0}(g_y)\cdot\Prem_{c,j}\right]+\Dfac_{T,0}(g_y)\cdot C_j}{N_S S_j+C_j}.
 \]
-Holding the shares instead gives $S_{j+1}/S_j$.
-\begin{itemize}\setlength{\itemsep}{0.1em}
-\item \hilite{Expires worthless,} $S_{j+1}\leq K_j$: the fund leads the
-shares by $\Dfac_{T,0}(g_y)\cdot\Prem_{c,j}/S_j$.
-\item \hilite{Exercised,} $S_{j+1}>K_j$: the ratio stops at
-$\bigl(K_j+\Dfac_{T,0}(g_y)\cdot\Prem_{c,j}\bigr)/S_j$.
-\end{itemize}
-\slidenote{Test month}{$S_j=100$, $K_j=102$, $\Prem_{c,j}=0.87$, $\Dfac=1.00345$: 1.0053 at $S_{j+1}=99.66$; 1.0287 for any $S_{j+1}\geq102$.}
+\slidenote{Test month}{$N_S=1000$, $S_j=100$, $C_j=5000$, $K_j=102$, $\Prem_{c,j}=0.87$, $\Dfac=1.00345$: 1.0052 at 99.66, 1.0275 at 110.}
 \end{frame}
 
 \begin{frame}{The growth rate over a roll}
@@ -100,13 +101,14 @@ final wealth is the product of the monthly ratios, so:
  =\frac{1}{T_{\text{roll}}}\sum_{j=1}^{N}\ln\left(\frac{W_{j+1}}{W_j}\right)
  \qquad(\text{units: }1/\text{yr}).
 \]
-The same formula with $S_{j+1}/S_j$ gives the shares' growth rate. The order of
-the ratios does not matter, and a ratio of exactly 1 adds nothing.
+Holding the shares (the same shares and opening cash, selling no calls) has
+its growth rate from the same formula with its own monthly ratios. The sum
+does not depend on the order of the ratios, and a ratio of exactly 1 adds nothing.
 
 \vspace{0.5em}
 \begin{itemize}\setlength{\itemsep}{0.3em}
 \item \hilite{In the model:} $N=6$ months of $\Delta t=D_1/365$ year, the
-first trade's term, so $T_{\text{roll}}=6\,\Delta t$.
+first trade's term ($D_1$ calendar days), so $T_{\text{roll}}=6\,\Delta t$.
 \item \hilite{In history:} $T_{\text{roll}}$ is the calendar days from a
 ticker's first entry to its last expiration, divided by 365, about $0.47$ year.
 \end{itemize}
@@ -120,13 +122,14 @@ month with geometric Brownian motion (GBM), our belief about the share price:
  +\hat\sigma\sqrt{\Delta t}\,Z_j\Bigr],\qquad Z_j\sim\mathcal{N}(0,1),
 \]
 on 10,000 paths from $S_1=S(0)$, the close on the first entry date, with
-$\Delta t=D_1/365$, the first trade's term. The drift
+$\Delta t=D_1/365$, the first trade's term of $D_1$ calendar days. The drift
 $\hat\mu=\hat g+\hat\sigma^{2}/2$ and volatility $\hat\sigma$ come from the
 252 daily changes before that date ($\hat g$: mean log growth rate).
 
 \vspace{0.3em}
-The strike is $K_j=m\,S_j$, with $m=K/S(0)$ from the first trade. The call is
-priced at one of two volatilities:
+The target strike is $m\,S_j$, with $m=K/S(0)$ from the first trade, and the
+fund sells the listed strike at or above it (next slide). The calls are priced
+at one of two volatilities:
 \begin{itemize}\setlength{\itemsep}{0.1em}
 \item \hilite{historical,} $\sigma=\hat\sigma$, as in the course example;
 \item \hilite{implied,} $\sigma=\sigma_{\text{IV}}$, implied by the call's
@@ -135,101 +138,100 @@ market price on the first entry date.
 \slidenote{Two probabilities}{Paths use our belief (drift $\hat\mu$); premiums use the risk-neutral tree (drift $g_y$).}
 \end{frame}
 
-\begin{frame}{The premium is a fixed fraction of the share price}
-Every node of the tree is $S_j$ times a factor that does not depend on $S_j$,
-and the payoff $(S-mS_j)^{+}$ scales the same way. So the premium is
-proportional to the share price:
+\begin{frame}{Listed strikes}
+Listed options are not FLEX options: their strikes lie on a grid, $\Delta K$
+apart. For each ticker, $\Delta K$ is its most common spacing near the share
+price in the course options archive, from 0.50 USD (PFE) to 5 USD. Each month
+the fund sells the smallest listed call strike at or above the target $m\,S_j$,
+and the Advanced collar fund buys the largest listed put strike at or below
+$m_1 S_j$:
 \[
- \Prem_{c,j}=c(m,\sigma)\,S_j,\qquad
- c(m,\sigma)=\frac{\Prem_c\bigl(S(0),\,m\,S(0)\bigr)}{S(0)}.
+ K_j=\Delta K\left\lceil\frac{m\,S_j}{\Delta K}\right\rceil,\qquad
+ K_{1,j}=\Delta K\left\lfloor\frac{m_1 S_j}{\Delta K}\right\rfloor,
 \]
-The report prices one call per ticker and pricing volatility, and the monthly
-ratio depends only on that month's price change:
-\[
- \frac{W_{j+1}}{W_j}=\min\left(\frac{S_{j+1}}{S_j},\,m\right)
- +\Dfac_{T,0}(g_y)\cdot c(m,\sigma).
-\]
-The fund gives up every monthly price ratio above $m$, and collects
-$c(m,\sigma)$ every month. A farther strike (larger $m$) gives up less and
-collects less.
-\slidenote{Report}{\textit{Premiums: model and market} lists $c(m,\hat\sigma)$, $c(m,\sigma_{\text{IV}})$, and the market's mid price over $S(0)$.}
+where $\lceil\cdot\rceil$ rounds up and $\lfloor\cdot\rfloor$ rounds down to a whole number.
+The ratio $K_j/S_j$ changes from month to month, so the premium is not a fixed
+fraction of the share price: the report prices the calls on the binomial tree
+every month on every simulated path. \textit{Strike choice in the model} repeats
+the fund with the targets in \texttt{moneyness\_grid}.
+\slidenote{Approximation}{Exchanges vary the spacing with the share price; one spacing per ticker simplifies the model. Study 2 uses the real strikes.}
 \end{frame}
 
 \begin{frame}{Replaying history}
-Each ticker has six back-to-back trades. Trade $j$ enters at the close
-$S_{0,j}$, sells the call with strike $K_j$ at its mid price $\Prem_{c,j}$, and
-settles at the close $S_{T,j}$ on the expiration date, $D_j$ calendar days
-later:
+Trade $j$ enters at the close $S_{0,j}$, sells calls with strike $K_j$ at
+their mid price $\Prem_{c,j}$, and settles at the close $S_{T,j}$, $D_j$ calendar
+days later. \texttt{covered\_call\_month} runs it with $\Dfac_j=e^{g_y D_j/365}$,
+and the cash carries to the next trade. When trade $j+1$ enters $G_j$ days after
+trade $j$ expires, with cash $C_{T,j}$, the fund holds its shares and cash:
 \[
- \frac{W_{j+1}}{W_j}
- =\frac{\min\left(S_{T,j},K_j\right)+\Dfac_j\cdot\Prem_{c,j}}{S_{0,j}},
- \qquad \Dfac_j=e^{g_y D_j/365}.
+ \frac{W_{0,j+1}}{W_{T,j}}=\frac{N_S S_{0,j+1}+e^{g_y G_j/365}\,C_{T,j}}{N_S S_{T,j}+C_{T,j}}.
 \]
-When trade $j+1$ enters after trade $j$ expires, the fund holds only its shares
-in between, so the fund and the shares both gain the ratio
-$S_{0,j+1}/S_{T,j}$. The risk-free rate comes from the 13-week bill yield
-$y=0.0376$ and term $\tau=91/365$, as in the course example:
+The risk-free rate comes from the 13-week bill yield $y=0.0376$ and term
+$\tau=91/365$, as in the course example:
 \[
  g_y=\frac{1}{\tau}\ln\left(1+y\,\tau\right)\approx0.0374\ \text{per year}.
 \]
-\slidenote{Benchmarks}{SPY bought at its close on the ticker's first entry date and sold on its last expiration date; cash grows at $g_y$, so its growth rate is $g_y$.}
+\slidenote{Benchmarks}{Holding: the same shares and opening cash, no calls. SPY: held from the ticker's first entry to its last expiration. Cash: $g_y$.}
 \end{frame}
 
 \begin{frame}{Promise versus outcome}
 Here the simulation follows ticker $i$'s real roll: each trade keeps its real
-$K_j/S_{0,j}$, $\Prem_{c,j}/S_{0,j}$, and $D_j$, with the gaps; only prices are
-simulated. It gives $N_p=10{,}000$ pairs
-$\bigl(g_{\text{fund}}^{(p)},g_{\text{shares}}^{(p)}\bigr)$, and with the
+target $K_j/S_{0,j}$, its $D_j$, and its call's implied volatility, with the
+gaps. The share prices are simulated; each simulated call takes the listed
+strike at or above the target, priced on the tree at that implied volatility.
+It gives $N_p=10{,}000$ pairs
+$\bigl(g_{\text{fund}}^{(p)},g_{\text{hold}}^{(p)}\bigr)$, and with the
 indicator $\one[\cdot]$:
 \[
  \hat P_i=\frac{1}{N_p}\sum_{p=1}^{N_p}
- \one\Bigl[g_{\text{fund}}^{(p)}>g_{\text{shares}}^{(p)}\Bigr],
+ \one\Bigl[g_{\text{fund}}^{(p)}>g_{\text{hold}}^{(p)}\Bigr],
  \qquad
  \text{expected count}=\sum_{i=1}^{29}\hat P_i .
 \]
-For one ticker, with the real difference $\delta_i=g_{\text{fund}}-g_{\text{shares}}$,
+For one ticker, with the real difference $\delta_i=g_{\text{fund}}-g_{\text{hold}}$,
 the model percentile is:
 \[
  q_i=\frac{1}{N_p}\sum_{p=1}^{N_p}
- \one\Bigl[g_{\text{fund}}^{(p)}-g_{\text{shares}}^{(p)}\leq\delta_i\Bigr].
+ \one\Bigl[g_{\text{fund}}^{(p)}-g_{\text{hold}}^{(p)}\leq\delta_i\Bigr].
 \]
-\slidenote{Reading}{A percentile near 0\% or 100\% is rare under the model; with matched trades it points at the share prices.}
+\slidenote{Reading}{A percentile near 0\% or 100\% is rare under the model: mostly the share prices, partly the market's premiums against the tree's.}
 \end{frame}
 
 \begin{frame}{Advanced: one month of the collar fund}\label{fr:collar}
-The collar fund also buys a put with strike $K_1<K_2$, where $K_2$ is the
-call's strike. With the put's premium $\Prem_1$ and the call's $\Prem_2$, the
-month's payoffs add to the share price held between a floor and a cap:
+The collar fund also buys puts with strike $K_1<K_2$, the calls' strike. With
+the put's premium $\Prem_1$ and the call's $\Prem_2$, the net premium goes into
+the cash, the cash grows, and both options settle in it; on a put exercise the
+fund sells its shares at $K_1$ and buys new ones at $S_{j+1}$:
+\[
+ C_{j+1}=\Dfac_{T,0}(g_y)\cdot\left(C_j+N_S\left(\Prem_2-\Prem_1\right)\right)
+ -\underbrace{N_S\left(S_{j+1}-K_2\right)^{+}}_{\text{calls exercised}}
+ +\underbrace{N_S\left(K_1-S_{j+1}\right)^{+}}_{\text{puts exercised}}.
+\]
+Its shares less the calls' payoff plus the puts' payoff are held between a floor and a cap:
 \[
  S_{j+1}+\left(K_1-S_{j+1}\right)^{+}-\left(S_{j+1}-K_2\right)^{+}
- =\min\Bigl(\max\left(S_{j+1},K_1\right),\,K_2\Bigr).
+ =\min\Bigl(\max\left(S_{j+1},K_1\right),\,K_2\Bigr),
 \]
-The net premium $\Prem_2-\Prem_1$, negative when the put costs more, grows to
-expiration with the cash:
-\[
- \frac{W_{j+1}}{W_j}
- =\frac{\min\bigl(\max\left(S_{j+1},K_1\right),K_2\bigr)
- +\Dfac_{T,0}(g_y)\cdot\left(\Prem_2-\Prem_1\right)}{S_j}.
-\]
-The put is the trade's \texttt{long\_put} leg, near 0.10 delta, well below the
-share price. The model uses $K_1=m_1S_j$ and $K_2=m\,S_j$, with $m_1$ and $m$ the
-first trade's strikes over $S(0)$, and prices the put at its implied volatility.
+and $W_{j+1}/W_j=(N_S S_{j+1}+C_{j+1})/(N_S S_j+C_j)$. The put is the trade's
+\texttt{long\_put} leg, near 0.10 delta.
 \slidenote{Course example}{\textit{A Protective Collar on SPY} uses the same floor $K_1$, cap $K_2$, and premiums $\Prem_1$ (put) and $\Prem_2$ (call).}
 \end{frame}
 
 \begin{frame}{Summary}
 PS5 runs a covered call fund twice: in a model of the share price, and on the
-real monthly calls of 29 tickers, and compares it with holding the shares.
+real monthly calls of 29 tickers, and compares it with holding the shares and
+the same cash.
 
 \vspace{0.6em}
 \textbf{Key takeaways}
 \begin{itemize}\setlength{\itemsep}{0.5em}
-\item Each month the fund's wealth ratio is the share price capped at the
-strike plus the grown premium, over the starting price. The premiums lift the
-falling months and the strike caps the rising ones.
+\item Each month the premium goes into the fund's cash, the cash grows, and
+an exercise is paid from it; the wealth ratio is the shares plus cash at the
+end over the start. The premiums lift the falling months and the strike caps
+the rising ones.
 \item The growth rate over a roll is the sum of the logs of the monthly wealth
 ratios divided by the time in years, in 1/yr for the model and for history.
-\item A model's probability that the fund beats the shares is a promise about
+\item A model's probability that the fund beats holding is a promise about
 many possible half-years; history gives one half-year, shared by all 29
 tickers.
 \end{itemize}

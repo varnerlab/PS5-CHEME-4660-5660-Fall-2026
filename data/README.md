@@ -1,13 +1,13 @@
 # PS5 shipped data
 
-PS5 reads the three files in this folder: `trades.csv`, `parameters.csv`, and `benchmark.csv`. They are the PS4 files, unchanged (see the SHA-256 hashes at the end). Do not edit them.
+PS5 reads the four files in this folder: `trades.csv`, `parameters.csv`, and `benchmark.csv`, which are the PS4 files, unchanged, and `strike_increments.csv`, new for PS5 (see the SHA-256 hashes at the end). Do not edit them.
 
 ## How PS5 uses the data
 
-- **The roll.** Each ticker's six trades, in order of entry, are the fund's six months. On each trade the fund sells the `short_call` leg: its strike is `short_call_K`, and graded results sell it at `short_call_mid` (the report's comparison sells at `short_call_bid`). The Advanced collar fund also buys the `long_put` leg at `long_put_mid`. A month's wealth ratio uses the closes `S0` (entry) and `ST` (expiration), and the premium grows at the risk-free rate for `days` calendar days.
-- **Gaps.** When a trade enters after the previous one's expiration (BMY on 2026-09-08 after 2026-09-04, and PFE on 2026-05-18 after 2026-05-15), the fund holds only its shares in between, so the report multiplies both the fund and the shares by the ratio of the two closes.
+- **The roll.** Each ticker's six trades, in order of entry, are the fund's six months. On each trade the fund sells the `short_call` leg: its strike is `short_call_K`, and graded results sell it at `short_call_mid` (the report's comparison sells at `short_call_bid`). The Advanced collar fund also buys the `long_put` leg at `long_put_mid`. A month uses the closes `S0` (entry) and `ST` (expiration), and the fund's cash, including the premium, grows at the risk-free rate for `days` calendar days. The cash carries from one trade to the next.
+- **Gaps.** When a trade enters after the previous one's expiration (BMY on 2026-09-08 after 2026-09-04, and PFE on 2026-05-18 after 2026-05-15), the fund holds its shares and its cash in between: the shares move from one close to the next, and the cash grows at the risk-free rate for the days between. Holding the shares does the same.
 - **Length of the roll.** A ticker's growth rates use the calendar days from its first entry to its last expiration, divided by 365.
-- **The model.** Study 1 uses each ticker's first trade only: `S0`, the strike multiples `short_call_K / S0` and `long_put_K / S0`, the implied volatilities `short_call_iv` and `long_put_iv`, and the trailing drift `μ` and volatility `σ̂` from `parameters.csv`. These are what the fund knew on its first entry date.
+- **The model.** Study 1 uses each ticker's first trade only: `S0`, the strike multiples `short_call_K / S0` and `long_put_K / S0`, the implied volatilities `short_call_iv` and `long_put_iv`, and the trailing drift `μ` and volatility `σ̂` from `parameters.csv`. These are what the fund knew on its first entry date. Each simulated strike is put on the ticker's grid of listed strikes, `strike_increment` apart (`strike_increments.csv`): the smallest listed strike at or above the call's target, and the largest at or below the put's.
 - **Benchmark.** SPY's growth rate for a ticker uses SPY's closes on that ticker's first entry date and last expiration date.
 
 The rest of this file is the PS4 data notes.
@@ -80,6 +80,15 @@ The daily closes of SPY from the options archive, the same source as `S0` and `S
 - `date`: session date, 2026-04-13 to 2026-10-16 (121 archive sessions).
 - `close`: closing price on that date (USD per share).
 
+## `strike_increments.csv` (one row per ticker)
+
+The spacing of each ticker's listed strikes, which the model uses to put every simulated strike on a listed strike. Listed options are not FLEX options, so their strikes come from a fixed grid.
+
+- `ticker`: underlying symbol.
+- `strike_increment`: the most common spacing between neighboring listed strikes, calls from `S0` to 1.15 times `S0` and puts from 0.85 times `S0` to `S0`, over the expirations of the ticker's trades, on their entry dates, in the course options archive (USD). Ties go to the smaller spacing.
+
+The spacing is 0.50 USD for PFE, 1 USD for BAC, BMY, INTC, MRNA, OXY, QQQ, SPY, TGT, UPS, WFC, WMT, and XOM, 2.50 USD for QCOM, and 5 USD for the other tickers. Exchanges vary the spacing with the share price and the expiration, and the archive's first captures in April list fewer strikes, so a few real strikes (for example BAC's 57.5 call in April) are not on the grid, and the model's strike can differ from the strike a real chain would offer. One spacing per ticker is an approximation for the model; Study 2 uses the real strikes. `instructor/build_strike_increments.jl` rebuilds the file from the archive.
+
 ## SHA-256
 
 Use these hashes to confirm that the files are unchanged.
@@ -87,3 +96,4 @@ Use these hashes to confirm that the files are unchanged.
 - `trades.csv`: `744cc33d7c5908ba29c49fc5d76a9b3bd85b8aa3afef0fdc16747e00fc3b89a5`
 - `parameters.csv`: `fb9fa7d53182bfeb7933e16922c32785cc116867b23bfee5ca6e8a492057453a`
 - `benchmark.csv`: `8f8eb3131f27af84f63008fd36aa35984d8f2dfef29111030aa68dee77dce813`
+- `strike_increments.csv`: `9f0d26a186ee9016c5f3aaf3ea27c8aca758caeb749b89c1a6d6fc32b1e677ac`

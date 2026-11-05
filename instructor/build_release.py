@@ -13,6 +13,7 @@ RELEASE_FILES = [
     "test/Rubric.jl", "test/public_standard_tests.jl", "test/public_advanced_tests.jl",
     "responses/Standard.md", "responses/Advanced.md",
     "data/README.md", "data/trades.csv", "data/parameters.csv", "data/benchmark.csv",
+    "data/strike_increments.csv",
     "docs/PS5-Mathematical-Companion.pdf", "docs/PS5-Mathematical-Companion.tex",
     "docs/style/assets/cornell-seal.pdf", "docs/Makefile", "docs/vnslides.sty",
     "docs/style/vnslides.sty", "docs/style/vnflow.sty",

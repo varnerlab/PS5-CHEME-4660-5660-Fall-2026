@@ -1,5 +1,5 @@
 # PS5 price model: simulate monthly share prices with geometric Brownian motion, as in the
-# course example "A Covered Call Fund on SPY" (Task 1).
+# course example "A Covered Call Fund on a Hypothetical Stock" (Task 1).
 using Dates, Random, VLQuantitativeFinancePackage
 
 """

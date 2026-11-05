@@ -84,51 +84,74 @@ function check_call_type_and_volatility()::Bool
     return low isa Float64 && low > 0 && high > low;
 end
 
-# --- covered_call_ratio checks ---
+# --- covered_call_month checks ---
 
-"""
-    check_ratio_worthless() -> Bool
-
-Below the strike the call expires worthless: the fund keeps the shares and the premium grown
-for the month. With S_start = 100, S_end = 99.66, K = 102, 𝒫 = 0.87, 𝒟 = 1.00345, the ratio is
-(99.66 + 1.00345·0.87)/100.
-"""
-function check_ratio_worthless()::Bool
-    value = covered_call_ratio(100.0, 99.66, 102.0, 0.87, 1.00345);
-    return isapprox(value, (99.66 + 1.00345 * 0.87) / 100; atol = 1e-12);
+# True when `result` is the NamedTuple (ratio = ..., cash = ...) of two Float64 values close to
+# the expected ratio and cash.
+function _month_matches(result, ratio::Float64, cash::Float64)::Bool
+    return result isa NamedTuple && propertynames(result) == (:ratio, :cash) &&
+        result.ratio isa Float64 && result.cash isa Float64 &&
+        isapprox(result.ratio, ratio; atol = 1e-12) && isapprox(result.cash, cash; atol = 1e-8);
 end
 
 """
-    check_ratio_exercised() -> Bool
+    check_month_worthless() -> Bool
 
-Above the strike the call is exercised: the shares less the payoff are worth the strike, so
-the ratio stops at (K + 𝒟·𝒫)/S_start however high the share price goes.
+Below the strike the calls expire worthless. With N_S = 1000 shares at S_start = 100, cash
+C = 5000, K = 102, 𝒫 = 0.87, and 𝒟 = 1.00345, the premium goes into the cash and grows, so the
+cash ends at 1.00345·(5000 + 870), and the ratio is (1000·99.66 + cash)/(1000·100 + 5000).
 """
-function check_ratio_exercised()::Bool
-    a = covered_call_ratio(100.0, 110.0, 102.0, 0.87, 1.00345);
-    b = covered_call_ratio(100.0, 150.0, 102.0, 0.87, 1.00345);
-    expected = (102.0 + 1.00345 * 0.87) / 100;
-    return isapprox(a, expected; atol = 1e-12) && isapprox(b, expected; atol = 1e-12);
+function check_month_worthless()::Bool
+    cash = 1.00345 * (5000.0 + 1000 * 0.87);
+    return _month_matches(covered_call_month(1000, 100.0, 99.66, 102.0, 0.87, 1.00345, 5000.0),
+        (1000 * 99.66 + cash) / (1000 * 100.0 + 5000.0), cash);
 end
 
 """
-    check_ratio_growth_factor() -> Bool
+    check_month_exercised() -> Bool
 
-The premium is multiplied by 𝒟, not divided: with 𝒟 = 1.5 and 𝒫 = 2, a month that ends at the
-starting price of 50 gives (50 + 3)/50.
+Above the strike the calls are exercised: the fund sells its shares at K and buys new ones at
+S_end, so its cash falls by N_S·(S_end - K) after it grows. With 𝒟 = 1.5, a share price of 110
+or 150 gives the same ratio, (1000·102 + 1.5·(5000 + 870))/105000, but different cash.
 """
-function check_ratio_growth_factor()::Bool
-    return isapprox(covered_call_ratio(50.0, 50.0, 55.0, 2.0, 1.5), 53.0 / 50.0; atol = 1e-12);
+function check_month_exercised()::Bool
+    grown = 1.5 * (5000.0 + 1000 * 0.87);
+    ratio = (1000 * 102.0 + grown) / 105000.0;
+    return _month_matches(covered_call_month(1000, 100.0, 110.0, 102.0, 0.87, 1.5, 5000.0),
+            ratio, grown - 1000 * (110.0 - 102.0)) &&
+        _month_matches(covered_call_month(1000, 100.0, 150.0, 102.0, 0.87, 1.5, 5000.0),
+            ratio, grown - 1000 * (150.0 - 102.0));
 end
 
 """
-    check_ratio_type() -> Bool
+    check_month_carries_cash() -> Bool
 
-`covered_call_ratio` returns one `Float64`, and at the strike both cases agree.
+Two months in a row, the second starting with the first month's cash: the fund opens having
+borrowed 2000, its calls are exercised in the first month, and expire in the second. The two
+ratios multiply to the final wealth over the initial wealth, and the final cash is the cash
+carried through both months.
 """
-function check_ratio_type()::Bool
-    value = covered_call_ratio(100.0, 102.0, 102.0, 1.0, 1.0);
-    return value isa Float64 && isapprox(value, 1.03; atol = 1e-12);
+function check_month_carries_cash()::Bool
+    first = covered_call_month(500, 100.0, 110.0, 102.0, 0.87, 1.004, -2000.0);
+    first isa NamedTuple && propertynames(first) == (:ratio, :cash) || return false;
+    second = covered_call_month(500, 110.0, 105.0, 113.0, 1.10, 1.004, first.cash);
+    second isa NamedTuple && propertynames(second) == (:ratio, :cash) || return false;
+    cash_1 = 1.004 * (-2000.0 + 500 * 0.87) - 500 * (110.0 - 102.0);
+    cash_2 = 1.004 * (cash_1 + 500 * 1.10);
+    W_1, W_3 = 500 * 100.0 - 2000.0, 500 * 105.0 + cash_2;
+    return isapprox(first.cash, cash_1; atol = 1e-8) && isapprox(second.cash, cash_2; atol = 1e-8) &&
+        isapprox(first.ratio * second.ratio, W_3 / W_1; atol = 1e-12);
+end
+
+"""
+    check_month_type() -> Bool
+
+`covered_call_month` returns the NamedTuple `(ratio = ..., cash = ...)` of two `Float64`
+values. With no cash and 𝒟 = 1 at the strike, both cases agree: (102 + 1)/100 = 1.03 and cash
+100·1 = 100.
+"""
+function check_month_type()::Bool
+    return _month_matches(covered_call_month(100, 100.0, 102.0, 102.0, 1.0, 1.0, 0.0), 1.03, 100.0);
 end
 
 # --- growth_rate checks ---
@@ -176,7 +199,7 @@ end
 """
     standard_public_checks() -> Vector{NamedTuple}
 
-The twelve Standard public checks: four for each of `call_premium`, `covered_call_ratio`, and
+The twelve Standard public checks: four for each of `call_premium`, `covered_call_month`, and
 `growth_rate`.
 """
 function standard_public_checks()::Vector{NamedTuple}
@@ -185,10 +208,10 @@ function standard_public_checks()::Vector{NamedTuple}
         (name = "Call premium: within 1% of Black-Scholes at the money", test = check_call_black_scholes),
         (name = "Call premium: doubling the share price and strike doubles it", test = check_call_scaling),
         (name = "Call premium: one positive Float64 that rises with volatility", test = check_call_type_and_volatility),
-        (name = "Covered call ratio: call expires worthless below the strike", test = check_ratio_worthless),
-        (name = "Covered call ratio: capped at the strike plus the premium", test = check_ratio_exercised),
-        (name = "Covered call ratio: premium grown by the accumulation factor", test = check_ratio_growth_factor),
-        (name = "Covered call ratio: one Float64 at the strike", test = check_ratio_type),
+        (name = "Covered call month: calls expire worthless, premium into the cash", test = check_month_worthless),
+        (name = "Covered call month: exercised calls paid from the grown cash", test = check_month_exercised),
+        (name = "Covered call month: cash carried from one month to the next", test = check_month_carries_cash),
+        (name = "Covered call month: returns (ratio, cash) as Float64 values", test = check_month_type),
         (name = "Growth rate: one ratio over half a year", test = check_growth_one_ratio),
         (name = "Growth rate: log of the product of the ratios over T", test = check_growth_product),
         (name = "Growth rate: zero for flat ratios, negative for a loss", test = check_growth_flat),

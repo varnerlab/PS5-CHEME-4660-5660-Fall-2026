@@ -64,8 +64,9 @@ Read a TOML settings file and check every value.
 
 - A `NamedTuple` with the fields `risk_free_rate`, `bill_term`, `gᵧ` (the
   continuously compounded risk-free rate, `log(1 + risk_free_rate·bill_term)/bill_term`,
-  in 1/yr), `number_of_paths`, `seed`, `moneyness_grid`, and
-  `benchmark_ticker`. Throws an `ArgumentError` with a one-sentence message when a
+  in 1/yr), `number_of_paths`, `seed`, `moneyness_grid`, `benchmark_ticker`,
+  `shares_per_contract`, `number_of_contracts`, `cash_reserve`, and `N_S`, the
+  shares the fund holds (`shares_per_contract·number_of_contracts`). Throws an `ArgumentError` with a one-sentence message when a
   setting is missing or invalid.
 """
 function load_config(path::AbstractString)::NamedTuple
@@ -84,6 +85,9 @@ function load_config(path::AbstractString)::NamedTuple
     number_of_paths = config_setting(settings, "number_of_paths", Int);
     seed = config_setting(settings, "seed", Int);
     benchmark_ticker = config_setting(settings, "benchmark_ticker", String);
+    shares_per_contract = config_setting(settings, "shares_per_contract", Int);
+    number_of_contracts = config_setting(settings, "number_of_contracts", Int);
+    cash_reserve = config_setting(settings, "cash_reserve", Float64);
     if !haskey(settings, "moneyness_grid") || !(settings["moneyness_grid"] isa AbstractVector)
         throw(ArgumentError("Setting 'moneyness_grid' must be a list of numbers."));
     end
@@ -100,13 +104,18 @@ function load_config(path::AbstractString)::NamedTuple
     check_setting(!isempty(moneyness_grid) && all(m -> 0.8 <= m <= 1.5, moneyness_grid),
         "Every moneyness in moneyness_grid must be from 0.8 to 1.5.");
     check_setting(!isempty(benchmark_ticker), "The benchmark_ticker must not be empty.");
+    check_setting(shares_per_contract >= 1, "The shares_per_contract must be at least 1.");
+    check_setting(number_of_contracts >= 1, "The number_of_contracts must be at least 1.");
+    check_setting(0 <= cash_reserve <= 1, "The cash_reserve must be from 0 to 1.");
 
     # The continuously compounded risk-free rate, as in the course examples (1/yr) -
     gᵧ = log(1 + risk_free_rate * bill_term) / bill_term;
 
     return (risk_free_rate = risk_free_rate, bill_term = bill_term, gᵧ = gᵧ,
         number_of_paths = number_of_paths, seed = seed,
-        moneyness_grid = moneyness_grid, benchmark_ticker = benchmark_ticker);
+        moneyness_grid = moneyness_grid, benchmark_ticker = benchmark_ticker,
+        shares_per_contract = shares_per_contract, number_of_contracts = number_of_contracts,
+        cash_reserve = cash_reserve, N_S = shares_per_contract * number_of_contracts);
 end
 
 """

@@ -1,5 +1,5 @@
 # SHA-256 of the shipped config/defaults.toml; the checker warns when a student edits the file -
-const PS5_DEFAULTS_SHA256 = "67cb44c460c3a12e95afa798ea9ae2088c5b4707936ca9d487a3bd19d81a0bb3";
+const PS5_DEFAULTS_SHA256 = "0b16684cb67fcf1f9006852b9d4c65e0369a638132420f3ab1a5fcd4355fab4c";
 
 """
     run_public_check(check::NamedTuple)
@@ -326,6 +326,6 @@ end
 
 
 # Functions that must have docstrings -
-const STANDARD_DOCUMENTED_FUNCTIONS = [:call_premium, :covered_call_ratio, :growth_rate];
+const STANDARD_DOCUMENTED_FUNCTIONS = [:call_premium, :covered_call_month, :growth_rate];
 
-const ADVANCED_DOCUMENTED_FUNCTIONS = vcat(STANDARD_DOCUMENTED_FUNCTIONS, [:put_premium, :collar_ratio]);
+const ADVANCED_DOCUMENTED_FUNCTIONS = vcat(STANDARD_DOCUMENTED_FUNCTIONS, [:put_premium, :collar_month]);

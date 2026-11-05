@@ -9,7 +9,8 @@
   model's promise, Study 2 what happened, Study 3 the conclusion. Preserve the
   agreed Standard (covered call fund) and Advanced (collar fund) scope.
 - Every student function copies a cell of the course examples "A Covered Call
-  Fund on SPY" or "A Protective Collar on SPY" (L11b) and uses course types.
+  Fund on a Hypothetical Stock" or "A Protective Collar on SPY" (L11b) and uses
+  course types.
   No student data wrangling.
 - The data are the PS4 files, unchanged. Default fill is mid; the bid is a
   comparison row only. The README states the quotes are Alpaca's indicative

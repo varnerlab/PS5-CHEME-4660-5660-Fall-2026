@@ -60,57 +60,72 @@ function check_put_type_and_volatility()::Bool
     return low isa Float64 && low > 0 && high > low;
 end
 
-# --- collar_ratio checks ---
+# --- collar_month checks ---
+
+# The cash after the net premium goes in and grows for the month, for the collar checks.
+_collar_grown(N_S, 𝒫₁, 𝒫₂, 𝒟, C) = 𝒟 * (C + N_S * (𝒫₂ - 𝒫₁));
 
 """
     check_collar_between() -> Bool
 
-Between the strikes neither option pays: the shares plus the net premium grown for the month.
+Between the strikes neither option pays: with N_S = 1000, cash 5000, 𝒫₁ = 0.40 (put), 𝒫₂ =
+1.10 (call), and 𝒟 = 1.004, the cash ends at 1.004·(5000 + 1000·0.70).
 """
 function check_collar_between()::Bool
-    value = collar_ratio(100.0, 97.0, 92.0, 105.0, 0.40, 1.10, 1.004);
-    return isapprox(value, (97.0 + 1.004 * (1.10 - 0.40)) / 100; atol = 1e-12);
+    cash = _collar_grown(1000, 0.40, 1.10, 1.004, 5000.0);
+    return _month_matches(collar_month(1000, 100.0, 97.0, 92.0, 105.0, 0.40, 1.10, 1.004, 5000.0),
+        (1000 * 97.0 + cash) / 105000.0, cash);
 end
 
 """
     check_collar_floor() -> Bool
 
-Below the put's strike the fund is worth the floor K₁, however far the share price falls.
+Below the put's strike the fund exercises its puts: it sells its shares at K₁ and buys new ones,
+so its cash rises by N_S·(K₁ - S_end). The ratio is floored, the same at 80 and at 50, but the
+cash differs.
 """
 function check_collar_floor()::Bool
-    expected = (92.0 + 1.004 * (1.10 - 0.40)) / 100;
-    return isapprox(collar_ratio(100.0, 80.0, 92.0, 105.0, 0.40, 1.10, 1.004), expected; atol = 1e-12) &&
-        isapprox(collar_ratio(100.0, 50.0, 92.0, 105.0, 0.40, 1.10, 1.004), expected; atol = 1e-12);
+    grown = _collar_grown(1000, 0.40, 1.10, 1.004, 5000.0);
+    ratio = (1000 * 92.0 + grown) / 105000.0;
+    return _month_matches(collar_month(1000, 100.0, 80.0, 92.0, 105.0, 0.40, 1.10, 1.004, 5000.0),
+            ratio, grown + 1000 * (92.0 - 80.0)) &&
+        _month_matches(collar_month(1000, 100.0, 50.0, 92.0, 105.0, 0.40, 1.10, 1.004, 5000.0),
+            ratio, grown + 1000 * (92.0 - 50.0));
 end
 
 """
     check_collar_cap() -> Bool
 
-Above the call's strike the fund is worth the cap K₂, however far the share price rises.
+Above the call's strike the calls are exercised and the cash falls by N_S·(S_end - K₂). The
+ratio is capped, the same at 120 and at 200, but the cash differs.
 """
 function check_collar_cap()::Bool
-    expected = (105.0 + 1.004 * (1.10 - 0.40)) / 100;
-    return isapprox(collar_ratio(100.0, 120.0, 92.0, 105.0, 0.40, 1.10, 1.004), expected; atol = 1e-12) &&
-        isapprox(collar_ratio(100.0, 200.0, 92.0, 105.0, 0.40, 1.10, 1.004), expected; atol = 1e-12);
+    grown = _collar_grown(1000, 0.40, 1.10, 1.004, 5000.0);
+    ratio = (1000 * 105.0 + grown) / 105000.0;
+    return _month_matches(collar_month(1000, 100.0, 120.0, 92.0, 105.0, 0.40, 1.10, 1.004, 5000.0),
+            ratio, grown - 1000 * (120.0 - 105.0)) &&
+        _month_matches(collar_month(1000, 100.0, 200.0, 92.0, 105.0, 0.40, 1.10, 1.004, 5000.0),
+            ratio, grown - 1000 * (200.0 - 105.0));
 end
 
 """
     check_collar_net_debit() -> Bool
 
-When the put costs more than the call brings in, the net premium is a cost: with 𝒫₁ = 2,
-𝒫₂ = 0.5, and 𝒟 = 1.5 at an unchanged price of 100, the ratio is (100 - 1.5·1.5)/100. It
-returns one `Float64`.
+When the put costs more than the call brings in, the net premium lowers the cash: with
+N_S = 200, borrowed cash -3000, 𝒫₁ = 2, 𝒫₂ = 0.5, and 𝒟 = 1.5, from 110 to 100, the cash ends
+at 1.5·(-3000 - 200·1.5) = -4950, and the ratio is (200·100 - 4950)/(200·110 - 3000). It
+returns `(ratio = ..., cash = ...)` as `Float64` values.
 """
 function check_collar_net_debit()::Bool
-    value = collar_ratio(100.0, 100.0, 95.0, 110.0, 2.0, 0.5, 1.5);
-    return value isa Float64 && isapprox(value, (100.0 - 1.5 * 1.5) / 100; atol = 1e-12);
+    return _month_matches(collar_month(200, 110.0, 100.0, 95.0, 115.0, 2.0, 0.5, 1.5, -3000.0),
+        (20000.0 - 4950.0) / 19000.0, -4950.0);
 end
 
 """
     advanced_public_checks() -> Vector{NamedTuple}
 
 The twenty Advanced public checks: the twelve Standard checks, then four for `put_premium` and
-four for `collar_ratio`.
+four for `collar_month`.
 """
 function advanced_public_checks()::Vector{NamedTuple}
     return vcat(standard_public_checks(), NamedTuple[
@@ -118,9 +133,9 @@ function advanced_public_checks()::Vector{NamedTuple}
         (name = "Put premium: an American put, at least its exercise value", test = check_put_american),
         (name = "Put premium: doubling the share price and strike doubles it", test = check_put_scaling),
         (name = "Put premium: one positive Float64 that rises with volatility", test = check_put_type_and_volatility),
-        (name = "Collar ratio: shares plus net premium between the strikes", test = check_collar_between),
-        (name = "Collar ratio: floored at the put's strike", test = check_collar_floor),
-        (name = "Collar ratio: capped at the call's strike", test = check_collar_cap),
-        (name = "Collar ratio: a net premium paid lowers the ratio; one Float64", test = check_collar_net_debit),
+        (name = "Collar month: net premium into the cash between the strikes", test = check_collar_between),
+        (name = "Collar month: floored at the put's strike; put payoff into the cash", test = check_collar_floor),
+        (name = "Collar month: capped at the call's strike; call payoff from the cash", test = check_collar_cap),
+        (name = "Collar month: a net premium paid lowers the cash; Float64 values", test = check_collar_net_debit),
     ]);
 end

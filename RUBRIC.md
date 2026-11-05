@@ -30,13 +30,16 @@ the deadline still qualifies for revisions.
   `MyAmericanPutContractModel`), and the course `binomial_premium` function
   with `method = :crr` and `h = 60`. Use the share price, strike, time,
   volatility, and rate passed in; do not hard-code them.
-- **Wealth ratio:** Compute the covered call fund's monthly wealth ratio from
-  the share prices, the strike, and the premium grown by the accumulation
-  factor, as in the course example. Do not change the arguments.
+- **One month of the fund:** Compute the covered call fund's monthly wealth
+  ratio and its cash at the end of the month, in the same steps as the course
+  example: the wealth at the start, the premium into the cash, the cash grown
+  by the accumulation factor, the calls' payoff paid from the cash, and the
+  wealth at the end. Return `(ratio = ..., cash = ...)`. Do not change the
+  arguments.
 - **Growth rate:** Add the logs of the wealth ratios and divide by the time in
   years. Leave the ratios unchanged.
 - **Advanced:** Price the put and compute the collar fund's monthly wealth
-  ratio with the same rules, and complete the Advanced copies of the three
+  ratio and cash with the same rules, and complete the Advanced copies of the three
   Standard functions.
 - **Documentation:** Keep the supplied docstrings. Document each helper's
   purpose, inputs, and output, and comment non-obvious steps. Load helper
@@ -47,11 +50,12 @@ the deadline still qualifies for revisions.
   than reproducing the tables. Give growth rates in 1/yr. Distinguish the
   model's promise (Study 1) from what happened (Study 2), and use the mid-price
   results as the headline and the bid results only as a comparison. For
-  Advanced, compare the collar fund with the covered call fund and the shares.
+  Advanced, compare the collar fund with the covered call fund and with holding the
+  shares and the same cash.
 - **Finished work:** Remove completed TODOs and starter errors from the
   selected track's source and response files. Leave the other track unchanged.
 
-We do not require the fund to beat the shares, the model to match the
+We do not require the fund to beat holding the shares, the model to match the
 outcomes, or your prediction to be right. We assess the calculations and your
 interpretation.
 

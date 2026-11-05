@@ -3,7 +3,7 @@
 
 # Annual yield of the 13-week Treasury bill (0.0376 means 3.76 percent per year). The report
 # converts it to a continuously compounded risk-free rate, which prices the calls in the model,
-# grows each premium until expiration, and gives the cash benchmark.
+# grows the fund's cash (and charges interest when it borrows), and gives the cash benchmark.
 # Source: the mean investment rate of the 13-week Treasury bills auctioned from 2026-04-13 to
 # 2026-08-24 (20 auctions), the same rate as PS4.
 risk_free_rate = 0.0376
@@ -18,9 +18,21 @@ number_of_paths = 10000
 # Seed for the random number generator, so every run gives the same paths.
 seed = 5660
 
-# Strikes, as multiples of the share price at the start of each month (K/S), for the model's
-# strike-choice table. The fund sells one call per month at each of these strikes.
+# Target strikes, as multiples of the share price at the start of each month (K/S), for the
+# model's strike-choice table. Each month the fund sells the smallest listed strike at or above
+# the target times the share price.
 moneyness_grid = [1.00, 1.02, 1.05, 1.10]
+
+# Shares per listed option contract.
+shares_per_contract = 100
+
+# Call contracts the fund sells every month; it holds shares_per_contract*number_of_contracts
+# shares. The growth rates do not depend on it.
+number_of_contracts = 10
+
+# Cash the fund holds when it opens, as a fraction of the value of its shares. The benchmark
+# that sells no calls opens with the same cash.
+cash_reserve = 0.05
 
 # Market benchmark for the report: the same money bought into this fund at the close on each
 # ticker's first entry date and sold at the close on its last expiration date. SPY is a fund

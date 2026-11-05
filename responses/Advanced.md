@@ -11,15 +11,15 @@ Growth rates are in 1/yr.
 ## 1. What does the model promise?
 
 **a. Predict** (before writing code; accuracy is not graded). On how many of
-the 29 tickers will the covered call fund grow faster than the shares over the
-half-year? Will the market's call premiums be larger or smaller than the
+the 29 tickers will the covered call fund grow faster than holding the shares
+over the half-year? Will the market's call premiums be larger or smaller than the
 model's premiums at the historical volatility? Will the collar fund grow
 faster or slower than the covered call fund? Why?
 
-**b. What the fund gives up.** In **The fund and the shares in the model**,
-compare the fund with calls priced at implied volatility with the shares: the
-average mean growth rate, the probability of a negative growth rate, and the
-probability that the fund beats the shares. Then use **Strike choice in the
+**b. What the fund gives up.** In **The fund and holding the shares in the
+model**, compare the fund with calls priced at implied volatility with
+holding: the average mean growth rate, the probability of a negative growth
+rate, and the probability that the fund beats holding. Then use **Strike choice in the
 model**: how does a farther strike change each of these, and why?
 
 **c. Pricing the call.** In **Premiums: model and market**, which pricing
@@ -33,15 +33,17 @@ TODO: Answer parts a, b, and c.
 
 ## 2. What happened?
 
-**a. Winners and losers.** On how many tickers did the fund beat the shares,
-and how many did the model expect? Using **Each ticker**, what separates the
-tickers where the fund won from those where it lost? Cite the shares' growth
-rates and the months called away.
+**a. Winners and losers.** On how many tickers did the fund beat holding the
+shares, and how many did the model expect? Using **Each ticker**, what
+separates the tickers where the fund won from those where it lost? Cite the
+growth rates of holding and the months called away.
 
 **b. Promise versus outcome.** Name the two tickers whose outcomes were rarest
 under the model (percentile nearest 0% or 100%). What did their shares do that
 the model did not expect, and what does that say about the drift and
-volatility the model took from the year before?
+volatility the model took from the year before? The model prices each
+simulated call at its implied volatility, not at the market's mid price; could
+that also play a part?
 
 <!-- answer-2:start -->
 TODO: Answer parts a and b.
@@ -49,8 +51,8 @@ TODO: Answer parts a and b.
 
 ## 3. What can we conclude?
 
-**a. Answer the central question.** Compare the fund with the shares, SPY, and
-cash in **Growth rates and benchmarks**: the average, the median, the lowest,
+**a. Answer the central question.** Compare the fund with holding the shares,
+SPY, and cash in **Growth rates and benchmarks**: the average, the median, the lowest,
 and the highest growth rate. What did the fund give up, what did it get, and
 how much did selling at the bid cost? Did your prediction hold?
 
@@ -60,8 +62,8 @@ result is weaker evidence than 29 separate half-years would be.
 
 **c. Did the floor pay for itself?** In **Advanced: the collar fund**, how
 many months did a put pay, and what did the puts cost on average? Compare the
-collar fund's growth rates with those of the covered call fund and the shares,
-and with the model's collar fund. What kind of half-year would favor the
+collar fund's growth rates with those of the covered call fund and holding the
+shares, and with the model's collar fund. What kind of half-year would favor the
 collar?
 
 <!-- answer-3:start -->

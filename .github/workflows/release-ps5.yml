@@ -43,5 +43,5 @@ jobs:
           gh release create "${GITHUB_REF_NAME}" \
             --draft \
             --verify-tag \
-            --title "PS5: Does a Covered Call Fund Beat Its Shares?" \
+            --title "PS5: Does a Covered Call Fund Beat Holding Its Shares?" \
             --notes-file instructor/release-notes.md

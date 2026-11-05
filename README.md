@@ -1,12 +1,13 @@
-# Problem Set 5 (PS5): Does a Covered Call Fund Beat Its Shares?
+# Problem Set 5 (PS5): Does a Covered Call Fund Beat Holding Its Shares?
 
-A covered call fund owns shares and, every month, sells one call on each share.
+A covered call fund owns shares and, every month, sells one call contract for
+every 100 shares it owns.
 The buyer pays the fund a premium today. If the share price stays below the
 strike, the call expires worthless and the fund keeps the shares and the
 premium. If the share price rises above the strike, the call is exercised: the
-fund gives up every gain above the strike. Covered call funds such as JEPI
-and JEPQ own large U.S. stocks and sell calls against them, seeking monthly
-income from the premiums. Their investors accept a trade: a steady premium in
+fund gives up every gain above the strike. Covered call funds such as FEPI
+own large technology stocks and sell slightly out-of-the-money calls on the
+stocks they hold, collecting the premiums as income. Their investors accept a trade: a steady premium in
 exchange for the best months.
 
 These trade-offs lead to the central question of PS5: **Does a covered call
@@ -17,7 +18,7 @@ you simulate the share price with geometric Brownian motion, price the calls on
 the binomial tree, and run the fund over thousands of simulated half-years, as
 in the course example. Then, in history: you replay the fund's **174 real
 monthly calls**, six on each ticker, sold from April to September 2026 at real
-option prices, and compare it with the shares, SPY, and cash over the same
+option prices, and compare it with holding the shares, SPY, and cash over the same
 days.
 
 PS5 has two tracks, and you choose one. **Standard** covers the covered call
@@ -30,9 +31,10 @@ protection paid for itself.
 
 PS5 builds on two course examples from the covered calls and collars lecture:
 
-- [A Covered Call Fund on SPY](https://github.com/varnerlab/CHEME-5660-CourseRepository-Fall-2026/blob/main/lectures/week-11/L11b/CHEME-5660-L11b-Example-CoveredCallFund-SPY-Fall-2026.ipynb),
-  which simulates the fund and compares its growth rate with that of the
-  shares. Every Standard function copies a line or two from this example.
+- [A Covered Call Fund on a Hypothetical Stock](https://github.com/varnerlab/CHEME-5660-CourseRepository-Fall-2026/blob/main/lectures/week-11/L11b/CHEME-5660-L11b-Example-CoveredCallFund-SPY-Fall-2026.ipynb),
+  which simulates the fund, with its shares and its cash account, and
+  compares its growth rate with that of holding the same shares and cash.
+  Every Standard function copies a few lines from this example.
 - [A Protective Collar on SPY](https://github.com/varnerlab/CHEME-5660-CourseRepository-Fall-2026/blob/main/lectures/week-11/L11b/CHEME-5660-L11b-Example-StandardListed-SPY-ProtectiveCollar-Fall-2026.ipynb),
   which builds the collar that the Advanced track rolls every month.
 
@@ -76,8 +78,8 @@ the same as in PS4.
 
    | Track | Code to complete | Questions to answer |
    |:--|:--|:--|
-   | Standard | Three functions in [src/Standard.jl](src/Standard.jl): `call_premium`, `covered_call_ratio`, and `growth_rate` | [responses/Standard.md](responses/Standard.md) |
-   | Advanced | All five functions in [src/Advanced.jl](src/Advanced.jl): the same three plus `put_premium` and `collar_ratio` | [responses/Advanced.md](responses/Advanced.md) |
+   | Standard | Three functions in [src/Standard.jl](src/Standard.jl): `call_premium`, `covered_call_month`, and `growth_rate` | [responses/Standard.md](responses/Standard.md) |
+   | Advanced | All five functions in [src/Advanced.jl](src/Advanced.jl): the same three plus `put_premium` and `collar_month` | [responses/Advanced.md](responses/Advanced.md) |
 5. Before you write any code, answer Question 1a, your prediction.
 6. Complete the functions as the sections below describe. Replace each
    `error("Complete ...")` with your calculation, following the TODO hint
@@ -91,7 +93,9 @@ the same as in PS4.
 
    The checker runs the 12 Standard or 20 Advanced graded checks, then runs
    your functions on every ticker and writes `results/Report.md`. Unfinished
-   calculations show `UNAVAILABLE`. Run it as you work; the first run is slow.
+   calculations show `UNAVAILABLE`. Run it as you work. Once your functions
+   run, the report prices every call on every simulated path, so a full run
+   takes one to two minutes.
 
 Edit only `TRACK.txt`, your track's source and response files, `Include.jl`,
 and helper files you add. Put helper functions in `.jl` files under
@@ -101,32 +105,43 @@ and helper files you add. Put helper functions in `.jl` files under
 
 ### One month of the fund
 
-At the start of each month the fund owns its shares and sells one call per
-share, about a month from expiration. The fund holds the premium as cash, which
-earns the risk-free rate until the call expires. At expiration:
+The fund holds 1,000 shares in the report (10 contracts of 100 shares) and a
+cash account. It opens with cash equal to 5% of the value of its shares
+(`cash_reserve` in [config/defaults.toml](config/defaults.toml)). At the start
+of each month it sells one call contract for every 100 shares, about a month
+from expiration, and follows the same steps as the course example:
 
-- **The call expires worthless** when the share price is at or below the
-  strike. The fund keeps its shares and the premium.
-- **The call is exercised** when the share price is above the strike. The fund
-  delivers its shares at the strike, so it is worth the strike plus the
-  premium, however high the share price went.
+1. Its **wealth at the start** of the month, before it sells the calls, is its
+   shares plus its cash.
+2. The **premium goes into the cash**, and over the month the cash earns the
+   risk-free rate.
+3. At expiration, when the share price is above the strike, **the calls are
+   exercised**: the fund sells its shares to the call buyers at the strike and
+   buys the same number of new shares at the share price, so its cash falls by
+   the calls' payoff. Otherwise the calls expire worthless and the fund keeps
+   its shares and the premium.
+4. Its **wealth at the end** of the month is its shares plus its cash. When the
+   cash runs out, the fund borrows at the risk-free rate (cash below zero).
 
-The fund then sells a new call for the next month and reinvests everything. We
-measure each month by the fund's **wealth ratio**, its wealth at the end of the
-month divided by its wealth at the start. Holding the shares instead gives the
-share price at the end of the month divided by the price at the start.
+The fund then sells new calls for the next month. We measure each month by the
+fund's **wealth ratio**, its wealth at the end of the month divided by its
+wealth at the start. The fund is compared with **holding the shares**: the
+same shares and the same opening cash, selling no calls, so its cash only
+earns the risk-free rate.
 
-**A worked example** (the checks' test month). The share price starts at 100
-USD/share. The fund sells a call with a strike of 102 for a premium of 0.87,
-which grows to 0.873 by expiration at the risk-free rate.
+**A worked example** (a check's test month). The fund holds 1,000 shares at
+100 USD/share and 5,000 USD of cash. It sells calls with a strike of 102 for a
+premium of 0.87 USD/share, so 870 USD goes into its cash, and the cash grows by
+the factor 1.00345 over the month.
 
-| Share price at expiration (USD/share) | Fund's wealth ratio | Shares' wealth ratio |
-|--:|--:|--:|
-| 99.66 | 1.0053 | 0.9966 |
-| 110.00 | 1.0287 | 1.1000 |
+| Share price at expiration (USD/share) | Fund's cash at the end (USD) | Fund's wealth ratio | Holding's wealth ratio |
+|--:|--:|--:|--:|
+| 99.66 | 5,890.25 | 1.0052 | 0.9969 |
+| 110.00 | −2,109.75 | 1.0275 | 1.0954 |
 
-In a falling month the premium lifts the fund above the shares; in a month
-that rises past the strike, the strike caps it.
+In a falling month the premium lifts the fund above holding; in a month that
+rises past the strike, the fund pays 8 USD/share for its new shares, borrows,
+and the strike caps its gain.
 
 ### Growth rate
 
@@ -169,41 +184,51 @@ For each ticker, the model uses what the fund knew on its first entry date:
   estimated from the year of daily closes before that date, simulated for six
   months on 10,000 paths. Each month lasts as long as the first trade. These paths are a belief about the share
   price, as in the course example.
-- **Strikes:** every month the fund sells a call at the first trade's strike
-  as a multiple of the share price, so its strike moves with the share price.
-- **Premiums:** your `call_premium` prices the call on the binomial tree, once
-  at the historical volatility (as in the course example) and once at the
-  call's implied volatility, the volatility its market price implies.
-
-Because the strike is a fixed multiple of the share price, the premium is the
-same percentage of the share price every month, so the report prices each call
-once per ticker.
+- **Strikes:** listed options are not FLEX options, so their strikes come from
+  a fixed grid. Every month the fund sells the smallest listed strike at or
+  above the first trade's strike, as a multiple of the share price, times that
+  month's share price. Each ticker's grid uses one strike increment, its most
+  common spacing near the share price in the options archive
+  ([data/strike_increments.csv](data/strike_increments.csv)), from 0.50 USD
+  (PFE) to 5 USD. Real exchanges vary the increment with the share price, so
+  this grid is an approximation.
+- **Premiums:** your `call_premium` prices the calls on the binomial tree
+  every month on every path, once at the historical volatility (as in the
+  course example) and once at the call's implied volatility, the volatility
+  its market price implies.
 
 ### Simplifications and benchmarks
 
-- One call per share; every amount is in USD per share.
+- The fund sells whole contracts: one call contract (100 shares) for every
+  100 shares it holds. Its growth rate does not depend on how many contracts
+  it sells.
+- The fund borrows at the risk-free rate, with no limit, when its cash runs
+  out; a real fund pays more and faces borrowing limits.
 - Every call is held to expiration and settled at the close on the expiration
   date. The calls are American, but PS5 assumes no early exercise.
 - No commissions, dividends, or taxes. Every growth rate uses closing prices
-  only, so the fund, the shares, and SPY all omit dividends.
+  only, so the fund, holding the shares, and SPY all omit dividends.
 
 The benchmarks cover each ticker's own dates, from its first entry to its last
-expiration. **The shares** and **SPY** are bought at the first close and held.
+expiration. **Holding the shares** holds the fund's shares and opening cash and
+sells no calls. **SPY** is bought at the first close and held.
 **Cash** earns the risk-free rate, from the 13-week Treasury bill yield of
 3.76% per year, the same rate as PS4 (`risk_free_rate` in
 [config/defaults.toml](config/defaults.toml)).
 
 ## Study 1: What does the model promise?
 
-The model gives, for each ticker, the distribution of the fund's and the
-shares' growth rates over half a year, before any of it happened.
+The model gives, for each ticker, the distribution of the growth rates of the
+fund and of holding the shares over half a year, before any of it happened.
 
 1. **Complete `call_premium`.** Build one short American call with the course
    `build` function and `MyAmericanCallContractModel`, then price it with the
    course `binomial_premium` function on a 60-step tree, as in Task 2 of the
    covered call fund example.
-2. **Complete `covered_call_ratio`.** Return the fund's wealth ratio for one
-   month, as in the example's Task 2.
+2. **Complete `covered_call_month`.** Run one month of the fund, as in the
+   main loop of the example's Task 2, and return its wealth ratio and its cash
+   at the end of the month. The report passes that cash in as the next
+   month's starting cash.
 3. **Complete `growth_rate`.** Return the growth rate from a list of wealth
    ratios and the time in years, as in the example's Task 3.
 4. **Read the promise.** Run the checker. In `results/Report.md`, read the
@@ -211,38 +236,44 @@ shares' growth rates over half a year, before any of it happened.
    - **Premiums: model and market** compares, for each ticker, the premium the
      model gives at the historical volatility and at the implied volatility
      with the market's mid price.
-   - **The fund and the shares in the model** averages, over the tickers, each
-     strategy's mean growth rate, its probability of a negative growth rate,
-     and the probability that the fund grows faster than the shares.
+   - **The fund and holding the shares in the model** averages, over the
+     tickers, each strategy's mean growth rate, its probability of a negative
+     growth rate, the probability that the fund grows faster than holding, and
+     the probability that the fund's cash goes negative.
    - **Strike choice in the model** repeats the fund with calls at other
-     strikes.
+     target strikes.
 5. **Answer Question 1.**
 
 ## Study 2: What happened?
 
-The same functions replay the fund's real calls. The fund sells each call at
-its real mid price, and each month's wealth ratio uses the real share prices
-at entry and at expiration.
+The same functions replay the fund's real calls. The fund sells each month's
+calls at their real strike and mid price, each month uses the real share
+prices at entry and at expiration, and the cash carries from one month to the
+next. Between an expiration and a later entry, the fund holds its shares and
+its cash grows.
 
 1. **Rerun the checker** (no new code), then read the Study 2 tables in
    `results/Report.md`:
    - **Growth rates and benchmarks**: the average, median, lowest, and highest
-     growth rate over the tickers, for the fund, the shares, SPY, and cash, and
-     how many tickers' funds beat their shares.
+     growth rate over the tickers, for the fund, holding the shares, SPY, and
+     cash, and how many tickers' funds beat holding.
    - **Each ticker**: how many months each fund's calls were exercised
-     ("called away"), its average premium, and its growth rate beside that of
-     the shares.
+     ("called away"), how many months ended with negative cash, its average
+     premium, and its growth rate beside that of holding.
    - **Promise versus outcome**: for each ticker, the model's probability
-     that the fund would beat the shares, whether it did, and where what
+     that the fund would beat holding, whether it did, and where what
      happened falls among the model's simulated outcomes. Here the model
-     follows the real roll: each trade keeps its real strike, premium, and
-     dates, and only the share prices are simulated, so a surprise comes from
-     the share prices.
+     follows the real roll: each trade keeps its real strike as a multiple of
+     the share price, its real dates, and its call's implied volatility. The
+     share prices are simulated, each simulated call takes the listed strike
+     at or above that multiple, and the binomial tree prices it at the
+     implied volatility. A surprise comes mostly from the share prices, and
+     partly from the gap between the market's premiums and the model's.
 2. **Answer Question 2.**
 
 ## Study 3: What can we conclude?
 
-Answer Question 3: compare the fund with the shares, SPY, and cash, and decide
+Answer Question 3: compare the fund with holding the shares, SPY, and cash, and decide
 what one half-year of history on 29 tickers can and cannot tell you. Standard
 students write no more code; Advanced students first complete the section
 below.
@@ -259,9 +290,12 @@ put's price comes out of the call's premium.
    their price includes the right to exercise early; the collar fund holds
    each put to expiration and does not use that right, which is worth little
    for a one-month put well below the share price.
-2. **Complete `collar_ratio`.** Return the collar fund's wealth ratio for one
-   month: the shares held between the floor and the cap, plus the call's
-   premium minus the put's, grown to expiration.
+2. **Complete `collar_month`.** Run one month of the collar fund and return
+   its wealth ratio and its cash: the call's premium minus the put's goes into
+   the cash, the cash grows, the calls' payoff is paid from it, and the puts'
+   payoff, when the share price ends below the put's strike, is added to it.
+   The puts and calls each cover all of the fund's shares, and the put's
+   strike is the largest listed strike at or below its target.
 3. **Read the collar.** Rerun the checker. The Study 1 tables add the collar
    fund in the model, and the report's **Advanced: the collar fund** table
    shows each ticker's real collar fund, with the months its put paid.

@@ -43,8 +43,15 @@ the 25-35 day window rolls forward a session and may skip).
    - Write them with the PS4 column order (`load_trade_table` checks it).
 3. **Copy them into `data/`** here and update `data/README.md`: the provenance
    (archive or collection end date), counts, skips, and the SHA-256 hashes.
-4. **No code changes are needed.** `ticker_rolls` and the model use the number of
-   trades each ticker has, so seven (or a mix of six and seven) works.
+4. **Rebuild `data/strike_increments.csv`** from the new trades and the options
+   archive the trades came from:
+   `julia --project=. --startup-file=no instructor/build_strike_increments.jl <archive-dir>`
+   (the unpacked `options_eod` artifact, one `<TICKER>.csv.gz` per ticker). Update
+   its hash and its list of spacings in `data/README.md`, and the range "from 0.50 USD
+   (PFE) to 5 USD" in `README.md` and on companion slide 8 if it changes. No other code changes are needed:
+   `ticker_rolls` and the model use the number of trades each ticker has, so seven
+   (or a mix of six and seven) works. Each extra trade adds about a sixth to the
+   checker's run time (about 80 s Standard and 100 s Advanced with six trades).
 5. **Update the text that says six:**
    - `README.md`: "174 real monthly calls, six on each ticker", "Each ticker has six
      trades, entered from April 13 to September 11", "ending by October 9", "about

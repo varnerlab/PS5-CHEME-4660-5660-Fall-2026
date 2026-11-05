@@ -12,7 +12,7 @@ Keep the inline styles: they carry the code colors and gray backgrounds into Can
 You can also paste this file's contents into the Canvas HTML editor.
 -->
 
-<h2>Problem Set 5: Does a Covered Call Fund Beat Its Shares?</h2>
+<h2>Problem Set 5: Does a Covered Call Fund Beat Holding Its Shares?</h2>
 
 <p>
   <strong>Release:</strong> Sunday, November 8, 2026<br>
@@ -22,14 +22,16 @@ You can also paste this file's contents into the Canvas HTML editor.
 </p>
 
 <p>
-  A covered call fund owns shares and sells one call on each share every
-  month. The premiums lift the months when the shares fall, and the strike
-  caps the months when they rise. In PS5 you run such a fund twice for each of
+  A covered call fund owns shares and a cash account, and every month sells
+  one call contract for every 100 shares it owns. The premiums go into its
+  cash and lift the months when the shares fall, and the strike caps the
+  months when they rise. In PS5 you run such a fund twice for each of
   29 stocks and funds: first in a model, simulating the share price with
   geometric Brownian motion and pricing the calls on the binomial tree as in
   the course example, and then in history, replaying 174 real monthly calls
   from April to October 2026 at their market prices. You compare the fund's
-  growth rate with that of the shares, SPY, and cash, and ask how well the
+  growth rate with that of holding the shares (the same shares and cash,
+  selling no calls), SPY, and cash, and ask how well the
   model's promise matched what happened. The Advanced track adds a collar
   fund, which also buys a put each month. You are graded on correct
   calculations and interpretation, never on whether the fund wins.
@@ -79,7 +81,7 @@ You can also paste this file's contents into the Canvas HTML editor.
 <p>
   Before you complete any function, write your prediction in Question 1a of
   your response file: on how many of the 29 tickers the covered call fund will
-  grow faster than the shares. The starter code is
+  grow faster than holding the shares. The starter code is
   incomplete, so the checks fail until you complete the functions. Edit only TRACK.txt, your track's source and response files,
   Include.jl, and helper files you add.
 </p>
@@ -107,7 +109,8 @@ You can also paste this file's contents into the Canvas HTML editor.
   the report</strong> to results/Report.md; there is no separate report
   command. Unfinished
   calculations show <code style="color: #c7254e; background-color: #f5f5f5; padding: 2px 4px; border-radius: 3px; font-family: Menlo, Monaco, Consolas, 'Courier New', monospace; font-size: 90%;">UNAVAILABLE</code>,
-  so rerun the command as you complete the functions. Use the report to
+  so rerun the command as you complete the functions. Once your functions
+  run, a full report takes one to two minutes. Use the report to
   answer your three questions.
 </p>
 
