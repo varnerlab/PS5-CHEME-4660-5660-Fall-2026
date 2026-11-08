@@ -48,8 +48,8 @@ the deadline still qualifies for revisions.
   selected response file with the requested numbers, units, and reasoning.
   Include the prediction and its reconsideration. Cite selected values rather
   than reproducing the tables. Give growth rates in 1/yr. Distinguish the
-  model's promise (Study 1) from what happened (Study 2), and use the mid-price
-  results as the headline and the bid results only as a comparison. For
+  model's promise (Study 1) from what happened (Study 2). Base your conclusions
+  on the mid-price results, and use the bid results only as a comparison. For
   Advanced, compare the collar fund with the covered call fund and with holding the
   shares and the same cash.
 - **Finished work:** Remove completed TODOs and starter errors from the

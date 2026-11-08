@@ -4,9 +4,9 @@ This is the Fall 2026 student release of PS5: *Does a Covered Call Fund Beat Hol
 
 Download **Source code (zip)** below, extract it, and begin with `README.md`. The release contains the starter code for both tracks, the trades and parameters for 29 stocks and funds (the PS4 data and one more trade on each ticker) and their listed strike increments, the mathematical companion, public tests, response files, the submission checker, and the grading rubric. The reference solutions are not included.
 
-Choose Standard or Advanced in `TRACK.txt`.
-* __Standard__ runs a covered call fund, which owns shares and sells a call on them every month, first in a model of the share price and then on 203 real monthly calls, and compares it with holding the same shares and cash without selling calls.
-* __Advanced__ adds a collar fund, which also buys a put each month, and asks whether that protection paid for itself.
+Set `TRACK.txt` to `standard` or `advanced`.
+* __Standard__ runs a covered call fund, which owns shares and sells a call on them every month, first in a model of the share price and then on 203 real trades, and compares it with holding the same shares and cash without selling calls.
+* __Advanced__ adds a collar fund, which also buys a put each month, and asks whether the puts were worth what they cost.
 
 Write your prediction in Question 1a before you view any results.
 

@@ -180,13 +180,10 @@ The names that are not defined or have no docstring in `Main`.
 """
 function missing_docstrings(function_names::Vector{Symbol})::Vector{Symbol}
 
-    # Julia keeps the docstrings of each module in a table; student code is loaded into Main -
-    docstrings = Base.Docs.meta(Main);
-
-    # A required function must be defined and have an entry in that table -
+    # A required function must be defined and have a docstring; student code is loaded into Main -
     missing_names = Symbol[];
     for name in function_names
-        has_docstring = isdefined(Main, name) && haskey(docstrings, Base.Docs.Binding(Main, name));
+        has_docstring = isdefined(Main, name) && Base.Docs.hasdoc(Main, name);
         if !has_docstring
             push!(missing_names, name);
         end

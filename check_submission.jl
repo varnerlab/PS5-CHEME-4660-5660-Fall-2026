@@ -136,9 +136,9 @@ end
 """
     write_file_record(io::IO, root::String, track::String, source_path::String) -> Nothing
 
-Record the contents of TRACK.txt, Include.jl, config/defaults.toml, all files under src/, and the
-selected response file. Also record the actual selected source, including
-when it is a local solution.
+Record the SHA-256 value of TRACK.txt, Include.jl, Project.toml, Manifest.toml,
+config/defaults.toml, all files under src/, and the selected response file. Also record the
+selected source file, including a local solution.
 
 ### Arguments
 

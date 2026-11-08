@@ -2,7 +2,7 @@
 # The report calls these functions for every ticker, every month, and every simulated path.
 # Keep the function names, arguments, return types, and docstrings.
 # Replace each error("Complete ...") expression with your calculation.
-# The setup lines and return statements are supplied.
+# The return statements are supplied.
 # Save your code, then run from the PS5 folder:
 # julia --project=. --startup-file=no check_submission.jl
 #
@@ -166,6 +166,7 @@ function growth_rate(ratios::Vector{Float64}, T::Float64)::Float64
     log_growth = error("Complete growth_rate: add up the logs of the ratios.");
 
     # TODO 2: Divide by the length of the period.
+    # Hint: log_growth / T.
     g = error("Complete growth_rate: divide by T.");
 
     return g;

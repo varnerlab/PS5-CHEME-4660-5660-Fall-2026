@@ -16,7 +16,7 @@ The rest of this file is the PS4 data notes, updated for the added trades.
 
 - Options: the course options archive, release `data-options-eod-2026-11-06`. It holds Alpaca end-of-day option quotes, and each underlying's daily close, for the sessions 2026-04-13 to 2026-11-06.
 - Historical drift and volatility (`parameters.csv`): from the last 253 daily closes before each entry date, which give 252 daily changes, taken from the course daily price datasets. Those datasets end 2026-09-04, so a trade entered after 2026-09-04 uses the options archive's closes of the underlying for the days after 2026-09-04.
-- The quotes come from Alpaca's free-plan indicative feed, not the official consolidated exchange quotes (OPRA). Graded results fill at mid prices, the midpoint of bid and ask. The bid and ask are used to choose and screen legs and in the comparison of fills.
+- The quotes come from Alpaca's free-plan indicative feed, not the official consolidated exchange quotes (OPRA). Graded results use mid prices, the midpoint of bid and ask. The bid and ask are used to choose and screen legs, and the report's comparison sells each call at the bid.
 - The risk-free rate in `config/defaults.toml` is 0.0376, the mean investment rate (bond-equivalent yield) of 13-week Treasury bills over 20 auctions, from 2026-04-13 to 2026-08-24, the last auction in the course Treasury bill data.
 - IWM and META are in the archive but excluded, because the course price datasets, which supply the historical drift and volatility, do not contain them.
 - Benchmark: the daily closes of SPY, the `benchmark_ticker` in `config/defaults.toml`, from the same options archive.
@@ -44,14 +44,14 @@ Indicative quotes are sometimes implausibly wide, so each chosen leg is screened
 
 ## `trades.csv` (one row per trade)
 
-Prices are USD per share, strikes are USD, volatilities are annualized decimals. Graded runs set each leg's `sell_price` and `buy_price` to `<leg>_mid` and its `IV` to `<leg>_iv`; the comparison of fills sells at `<leg>_bid` and buys at `<leg>_ask`.
+Prices are USD per share, strikes are USD, volatilities are annualized decimals.
 
 - `trade_id`: trade number, 1 to 203 (alphabetical by ticker, then by entry date).
 - `ticker`: underlying symbol.
 - `group`: sector label of the ticker from the archive (for example Technology, or Exchange-traded funds).
 - `entry`: entry date.
 - `expiration`: expiration date.
-- `days`: calendar days from entry to expiration. The builders' `DTE` is `days / 365`, in years.
+- `days`: calendar days from entry to expiration.
 - `S0`: closing price of the underlying on the entry date (USD).
 - `ST`: closing price of the underlying on the expiration date (USD).
 - `atm_iv`: mean implied volatility of the ATM call and put, annualized decimal.
@@ -67,7 +67,7 @@ Prices are USD per share, strikes are USD, volatilities are annualized decimals.
 ## `parameters.csv` (one row per trade)
 
 - `trade_id`: matches `trades.csv`.
-- `ĝ`: annualized growth rate of the log price (mean daily log return times 252).
+- `ĝ`: annualized mean log growth rate (mean daily log return times 252).
 - `σ̂`: annualized volatility (standard deviation of daily log returns times the square root of 252), the models' historical volatility.
 - `μ`: annualized drift of the price, `ĝ` plus half of `σ̂` squared, the models' historical drift.
 - `n_obs`: number of daily returns used (252).
@@ -87,7 +87,7 @@ The spacing of each ticker's listed strikes, which the model uses to put every s
 - `ticker`: underlying symbol.
 - `strike_increment`: the most common spacing between neighboring listed strikes, calls from `S0` to 1.15 times `S0` and puts from 0.85 times `S0` to `S0`, over the expirations of the ticker's trades, on their entry dates, in the course options archive (USD). Ties go to the smaller spacing.
 
-The spacing is 0.50 USD for PFE, 1 USD for BAC, BMY, INTC, MRNA, OXY, QQQ, SPY, TGT, UPS, WFC, WMT, and XOM, 2.50 USD for QCOM, and 5 USD for the other tickers. Exchanges vary the spacing with the share price and the expiration, and the archive's first captures in April list fewer strikes, so a few real strikes (for example BAC's 57.5 call in April) are not on the grid, and the model's strike can differ from the strike a real chain would offer. One spacing per ticker is an approximation for the model; Study 2 uses the real strikes. `instructor/build_strike_increments.jl` rebuilds the file from the archive.
+The spacing is 0.50 USD for PFE, 1 USD for BAC, BMY, INTC, MRNA, OXY, QQQ, SPY, TGT, UPS, WFC, WMT, and XOM, 2.50 USD for QCOM, and 5 USD for the other tickers. Exchanges vary the spacing with the share price and the expiration, and the archive's first captures in April list fewer strikes, so a few real strikes (for example BAC's 57.5 call in April) are not on the grid, and the model's strike can differ from the strike a real chain would offer. One spacing per ticker is an approximation for the model; Study 2 uses the real strikes.
 
 ## SHA-256
 

@@ -24,12 +24,12 @@ You can also paste this file's contents into the Canvas HTML editor.
 <p>
   A covered call fund owns shares and a cash account, and every month sells
   one call contract for every 100 shares it owns. The premiums go into its
-  cash and lift the months when the shares fall, and the strike caps the
-  months when they rise. In PS5 you run such a fund twice for each of
+  cash and offset share losses, and the calls give up gains above the strike.
+  In PS5 you run such a fund twice for each of
   29 stocks and funds: first in a model, simulating the share price with
   geometric Brownian motion and pricing the calls on the binomial tree as in
-  the course example, and then in history, replaying 203 real monthly calls,
-  sold from April to October 2026, at their market prices. You compare the fund's
+  the course example, and then in history, replaying 203 real trades,
+  entered from April to October 2026, at their market prices. You compare the fund's
   growth rate with that of holding the shares (the same shares and cash,
   selling no calls), SPY, and cash, and ask how well the
   model's promise matched what happened. The Advanced track adds a collar
@@ -129,7 +129,7 @@ You can also paste this file's contents into the Canvas HTML editor.
 
 <ol>
   <li>
-    Zip the entire problem-set folder after running the checker, including
+    Zip the entire PS5 folder after running the checker, including
     your code, answers, data, project files, checker, tests, and generated
     <code style="color: #c7254e; background-color: #f5f5f5; padding: 2px 4px; border-radius: 3px; font-family: Menlo, Monaco, Consolas, 'Courier New', monospace; font-size: 90%;">MANIFEST.txt</code>.
   </li>

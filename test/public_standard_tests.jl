@@ -76,7 +76,15 @@ end
 Doubling the share price and the strike doubles the premium.
 """
 function check_call_scaling()::Bool
-    (; S, K, T, σ, r) = PS5_TEST;
+
+    # The inputs of the test month -
+    S = PS5_TEST.S;
+    K = PS5_TEST.K;
+    T = PS5_TEST.T;
+    σ = PS5_TEST.σ;
+    r = PS5_TEST.r;
+
+    # Double the share price and the strike, and compare the premiums -
     return isapprox(call_premium(2S, 2K, T, σ, r), 2 * call_premium(S, K, T, σ, r); rtol = 1e-9);
 end
 
@@ -86,7 +94,14 @@ end
 `call_premium` returns one positive `Float64`, and a higher volatility gives a higher premium.
 """
 function check_call_type_and_volatility()::Bool
-    (; S, K, T, r) = PS5_TEST;
+
+    # The inputs of the test month, without its volatility -
+    S = PS5_TEST.S;
+    K = PS5_TEST.K;
+    T = PS5_TEST.T;
+    r = PS5_TEST.r;
+
+    # Price the call at a low and at a high volatility, and compare the premiums -
     low = call_premium(S, K, T, 0.15, r);
     high = call_premium(S, K, T, 0.40, r);
     return low isa Float64 && low > 0 && high > low;

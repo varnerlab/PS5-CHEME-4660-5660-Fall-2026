@@ -61,10 +61,16 @@ quote the error on one line.
 function _issue_text(caught)::String
 
     # The non-empty lines of the message (Base.strip: the course package has its own strip) -
-    lines = filter(!isempty, Base.strip.(split(sprint(showerror, caught), '\n')));
+    lines = String[];
+    for line in split(sprint(showerror, caught), '\n')
+        cleaned = Base.strip(line);
+        if !isempty(cleaned)
+            push!(lines, String(cleaned));
+        end
+    end
 
     # Use the first line, or the type of the error when the message is empty -
-    text = isempty(lines) ? string(typeof(caught)) : String(first(lines));
+    text = isempty(lines) ? string(typeof(caught)) : first(lines);
 
     # Shorten a long line -
     if length(text) > 300
@@ -258,10 +264,14 @@ _present(v) = collect(Float64, skipmissing(v));
 Return the mean of one column of a table, or `missing` when any value in the column is `missing`.
 """
 function _column_mean(table::AbstractDataFrame, column::Symbol)
+
+    # A column with a missing value has no mean -
     column_values = table[!, column];
     if any(ismissing, column_values)
         return missing;
     end
+
+    # Every value is present, so average the column -
     return mean(Float64.(column_values));
 end
 
@@ -273,9 +283,13 @@ deviation `sd`, and the probability `loss` that the growth rate is negative. All
 `missing` when `rates` is `missing`.
 """
 function _path_statistics(rates)::NamedTuple
+
+    # Without growth rates, every statistic is missing -
     if rates === missing
         return (mean = missing, sd = missing, loss = missing);
     end
+
+    # The mean, the standard deviation, and the probability of a negative growth rate -
     return (mean = mean(rates), sd = std(rates), loss = mean(rates .< 0));
 end
 
@@ -381,7 +395,9 @@ function _model_fund_rates(calls::StudentCalls, ticker::String, S::Matrix{Float6
             month = _run_covered_call_month(calls, ticker, N_S, S[j, p], S[j+1, p], K, 𝒫, 𝒟, C);
             ratios[j] = month.ratio;
             C = month.cash;
-            borrowed[p] |= C < 0;
+            if C < 0
+                borrowed[p] = true;
+            end
         end
 
         # A wiped-out path counts as a 99.9% loss; any other path uses its monthly wealth ratios -
@@ -437,7 +453,9 @@ function _model_collar_rates(calls::StudentCalls, ticker::String, S::Matrix{Floa
             month = _run_collar_month(calls, ticker, N_S, S[j, p], S[j+1, p], K₁, K₂, 𝒫₁, 𝒫₂, 𝒟, C);
             ratios[j] = month.ratio;
             C = month.cash;
-            borrowed[p] |= C < 0;
+            if C < 0
+                borrowed[p] = true;
+            end
         end
         rates[p] = _run_growth_rate(calls, ticker, copy(ratios), T);
     end
@@ -692,12 +710,18 @@ function benchmark_closes(table::DataFrame, ticker::AbstractString, rolls)::Dict
         throw(ArgumentError("The benchmark closes are not for benchmark_ticker $(ticker)."));
 
     # Keep the positive closes -
-    closes = Dict{Date,Float64}(d => Float64(c) for (d, c) in zip(table.date, table.close)
-        if d isa Date && c isa Real && isfinite(c) && c > 0);
+    closes = Dict{Date,Float64}();
+    for row in eachrow(table)
+        if row.date isa Date && row.close isa Real && isfinite(row.close) && row.close > 0
+            closes[row.date] = Float64(row.close);
+        end
+    end
 
     # Every roll needs a close on its first entry date and on its last expiration date -
-    for r in rolls, d in (r.first_entry, r.last_expiration)
-        haskey(closes, d) || throw(ArgumentError("The benchmark closes have no $(ticker) close on $(d)."));
+    for r in rolls
+        for d in (r.first_entry, r.last_expiration)
+            haskey(closes, d) || throw(ArgumentError("The benchmark closes have no $(ticker) close on $(d)."));
+        end
     end
     return closes;
 end
@@ -781,7 +805,9 @@ function _history_ratios(strategy::Symbol, calls::StudentCalls, roll::NamedTuple
         month = _history_month(strategy, calls, roll.ticker, m, C, config);
         push!(ratios, month.ratio);
         C = month.cash;
-        negative_months += C < 0;
+        if C < 0
+            negative_months += 1;
+        end
     end
     return (ratios = ratios, negative_months = negative_months);
 end
@@ -794,9 +820,13 @@ Return the growth rate (1/yr) of one strategy over a ticker's real roll, from th
 `growth_rate` fails.
 """
 function _history_rate(calls::StudentCalls, roll::NamedTuple, path)
+
+    # A strategy that failed has no wealth ratios, so the strategy has no growth rate -
     if path === missing
         return missing;
     end
+
+    # The student's growth_rate turns the wealth ratios into a growth rate -
     return _attempt(() -> _run_growth_rate(calls, roll.ticker, path.ratios, roll.T));
 end
 
@@ -905,16 +935,31 @@ function summary_table(track::String, history::DataFrame, benchmark_ticker::Abst
         if !is_fund
             beat_count = "—";
         elseif complete && holding_complete
-            beat_count = count(Float64.(history[!, column]) .> Float64.(history.holding_g));
+            beat_count = 0;
+            for row in eachrow(history)
+                if row[column] > row.holding_g
+                    beat_count += 1;
+                end
+            end
         else
             beat_count = missing;
         end
 
         # The averages need every ticker's growth rate -
-        push!(rows, (strategy = label, tickers = length(rates),
-            avg_g = complete ? mean(rates) : missing, median_g = complete ? median(rates) : missing,
-            lowest_g = complete ? minimum(rates) : missing, highest_g = complete ? maximum(rates) : missing,
-            beat_holding = beat_count));
+        avg_g = missing;
+        median_g = missing;
+        lowest_g = missing;
+        highest_g = missing;
+        if complete
+            avg_g = mean(rates);
+            median_g = median(rates);
+            lowest_g = minimum(rates);
+            highest_g = maximum(rates);
+        end
+
+        # This strategy's row of the table -
+        push!(rows, (strategy = label, tickers = length(rates), avg_g = avg_g, median_g = median_g,
+            lowest_g = lowest_g, highest_g = highest_g, beat_holding = beat_count));
     end
     return DataFrame(rows);
 end
@@ -1008,6 +1053,8 @@ end
 Round `x` for display, and turn a negative zero into zero, so that a value never prints as `-0.0`.
 """
 function _shown(x::Real, digits::Int)
+
+    # Round the value, then replace a negative zero with zero -
     v = round(x; digits = digits);
     return v == 0 ? zero(v) : v;
 end
@@ -1015,16 +1062,9 @@ end
 """
     _text(x) -> String
 
-Format a value as text, left aligned in a table. A missing value shows as `UNAVAILABLE`.
+Format a value as text. A missing value shows as `UNAVAILABLE`.
 """
 _text(x)::String = ismissing(x) ? "UNAVAILABLE" : string(x);
-
-"""
-    _count(x) -> String
-
-Format a count, right aligned in a table. A missing value shows as `UNAVAILABLE`.
-"""
-_count(x)::String = _text(x);
 
 """
     _rate(x) -> String
@@ -1091,17 +1131,19 @@ shows as it is.
 """
 _rate_or_text(x)::String = x isa AbstractString ? x : _rate(x);
 
+# The columns that hold names, which are left aligned. Every other column is right aligned -
+const _LEFT_ALIGNED_COLUMNS = (:strategy, :ticker);
+
 # The columns of each displayed table, in order: the header, the column of the data table, and the
-# display format. A column formatted with `_text` is left aligned; every other column is right
-# aligned. These are the tables of Report.md.
+# display format. These are the tables of Report.md.
 const _SUMMARY_COLUMNS = [
     ("Strategy", :strategy, _text),
-    ("Tickers", :tickers, _count),
+    ("Tickers", :tickers, _text),
     ("Avg growth rate (1/yr)", :avg_g, _g),
     ("Median", :median_g, _g),
     ("Lowest", :lowest_g, _g),
     ("Highest", :highest_g, _g),
-    ("Tickers that beat holding", :beat_holding, _count)];
+    ("Tickers that beat holding", :beat_holding, _text)];
 const _MODEL_SUMMARY_COLUMNS = [
     ("Strategy", :strategy, _text),
     ("Avg premium (% of share price)", :premium, _premium_or_text),
@@ -1125,9 +1167,9 @@ const _STRIKE_COLUMNS = [
     ("Avg P(cash goes negative)", :borrows, _rate)];
 const _HISTORY_COLUMNS = [
     ("Ticker", :ticker, _text),
-    ("Months", :months, _count),
-    ("Months called away", :months_called, _count),
-    ("Months ending with negative cash", :months_borrowed, _count),
+    ("Months", :months, _text),
+    ("Months called away", :months_called, _text),
+    ("Months ending with negative cash", :months_borrowed, _text),
     ("Avg premium (% of share price)", :premium_market, _premium),
     ("Fund growth rate", :fund_g, _g),
     ("Holding growth rate", :holding_g, _g),
@@ -1140,8 +1182,8 @@ const _PROMISE_COLUMNS = [
     ("Model percentile of what happened", :percentile, _rate)];
 const _COLLAR_COLUMNS = [
     ("Ticker", :ticker, _text),
-    ("Months floored by the put", :months_floored, _count),
-    ("Months called away", :months_called, _count),
+    ("Months floored by the put", :months_floored, _text),
+    ("Months called away", :months_called, _text),
     ("Avg put cost (% of share price)", :put_cost, _premium),
     ("Collar fund growth rate", :collar_g, _g),
     ("Covered call fund growth rate", :fund_g, _g),
@@ -1157,7 +1199,7 @@ const _TERMINAL_SUMMARY_COLUMNS = [
     ("Strategy", :strategy, _text),
     ("Avg g", :avg_g, _g),
     ("Median", :median_g, _g),
-    ("Beat holding", :beat_holding, _count)];
+    ("Beat holding", :beat_holding, _text)];
 
 """
     _display(table, spec) -> NamedTuple
@@ -1170,9 +1212,27 @@ Format a data table for display, using a list of columns such as `_SUMMARY_COLUM
   right-aligned columns.
 """
 function _display(table::AbstractDataFrame, spec::Vector)::NamedTuple
-    headers = [h for (h, _, _) in spec];
-    rows = [[f(row[c]) for (_, c, f) in spec] for row in eachrow(table)];
-    right = [j for (j, (_, _, f)) in enumerate(spec) if f !== _text];
+
+    # The headers, and the positions of the right-aligned columns -
+    headers = String[];
+    right = Int[];
+    for j in eachindex(spec)
+        header, column, _ = spec[j];
+        push!(headers, header);
+        if !(column in _LEFT_ALIGNED_COLUMNS)
+            push!(right, j);
+        end
+    end
+
+    # One row of formatted cells for each row of the table -
+    rows = Vector{String}[];
+    for row in eachrow(table)
+        cells = String[];
+        for (_, column, format_cell) in spec
+            push!(cells, format_cell(row[column]));
+        end
+        push!(rows, cells);
+    end
     return (headers = headers, rows = rows, right = right);
 end
 
@@ -1189,8 +1249,8 @@ _csv_cell(x)::String = "\"" * replace(_text(x), '"' => "\"\"") * "\"";
 """
     write_table_csv(path, table) -> Nothing
 
-Write a table as CSV at full `Float64` precision, with every cell quoted. Missing values are
-written as `UNAVAILABLE`.
+Write a table as CSV at full `Float64` precision, with every data cell quoted and the header row
+unquoted. Missing values are written as `UNAVAILABLE`.
 """
 function write_table_csv(path::AbstractString, table::DataFrame)::Nothing
 
@@ -1275,23 +1335,27 @@ Return the two paragraphs that open the report.
 function _run_description(track::AbstractString, rolls::Vector{NamedTuple}, config::NamedTuple,
     config_name::AbstractString)::NamedTuple
 
-    # Facts about the run; the number of paths gets a comma every three digits -
+    # Facts about the run -
     trades = sum(length(r.months) for r in rolls);
     first_date = minimum(r.first_entry for r in rolls);
     last_date = maximum(r.last_expiration for r in rolls);
-    paths = replace(string(config.number_of_paths), r"(?<=\d)(?=(\d{3})+$)" => ",");
+
+    # The numbers that the two paragraphs show, as text -
+    opening_cash_percent = @sprintf("%.0f", 100 * config.cash_reserve);
+    risk_free_rate = @sprintf("%.4f", config.gᵧ);
+    bill_yield_percent = @sprintf("%.2f", 100 * config.risk_free_rate);
 
     # The first paragraph describes the track, the tickers, and the fund -
-    text = "$(titlecase(track)) track. $(length(rolls)) tickers, $(trades) monthly calls in all, " *
+    text = "$(titlecase(track)) track. $(length(rolls)) tickers, $(trades) trades in all, " *
         "from $(first_date) to $(last_date). Each ticker's fund holds $(config.N_S) shares and a cash account, " *
         "and every month sells $(config.number_of_contracts) call contracts of $(config.shares_per_contract) shares; " *
-        "it opens with cash equal to $(@sprintf("%.0f", 100 * config.cash_reserve))% of the value of its shares " *
+        "it opens with cash equal to $(opening_cash_percent)% of the value of its shares " *
         "and borrows at the risk-free rate when the cash runs out.";
 
     # The second paragraph lists the settings -
-    settings = "Settings ($(config_name)): risk-free rate $(@sprintf("%.4f", config.gᵧ)) per year " *
-        "(continuously compounded, from a $(@sprintf("%.2f", 100 * config.risk_free_rate))% 13-week bill yield), " *
-        "$(paths) simulated paths per ticker, seed $(config.seed), 60-step binomial trees, " *
+    settings = "Settings ($(config_name)): risk-free rate $(risk_free_rate) per year " *
+        "(continuously compounded, from a $(bill_yield_percent)% 13-week bill yield), " *
+        "$(config.number_of_paths) simulated paths per ticker, seed $(config.seed), 60-step binomial trees, " *
         "market benchmark $(config.benchmark_ticker).";
     return (text = text, settings = settings);
 end
@@ -1323,10 +1387,10 @@ function _write_study_one(io::IO, track::AbstractString, t::NamedTuple)::Nothing
     # What the model does -
     println(io, "## Study 1: What does the model promise?\n");
     println(io, "For each ticker, the model simulates seven months of share prices with geometric Brownian motion, ",
-        "using the drift and volatility from the year before the first entry date. Every month, which lasts as long as ",
-        "the first trade, the fund sells calls at the smallest strike at or above the first trade's strike multiple ",
-        "times the share price on the ticker's listed-strike grid (one spacing per ticker, an approximation of the real ",
-        "listed strikes), and prices them on the binomial tree. ",
+        "using the drift and volatility from the year before the first entry date. A simulated month lasts as long as ",
+        "the first trade. Each month, the fund sells calls at the smallest listed strike at or above the first trade's ",
+        "strike multiple times the share price, and the model prices the calls on the binomial tree. Each ticker has one ",
+        "strike spacing, an approximation of the real listed strikes. ",
         "The premiums go into the fund's cash, which earns the risk-free rate; when a call is exercised, the fund buys ",
         "new shares from its cash, borrowing at the risk-free rate when the cash runs out. Holding: the same shares and ",
         "opening cash, with no calls. Growth rates are in 1/yr and use prices only: the fund and holding both omit dividends.\n");

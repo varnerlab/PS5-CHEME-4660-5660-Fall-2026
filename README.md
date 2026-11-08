@@ -6,13 +6,13 @@ In return, the buyer gets the right to buy the shares at a fixed price, the
 **strike**, when the call expires. If the share price ends below the strike,
 the fund keeps its shares and the premium. If the share price ends above the
 strike, the fund gives up every gain above the strike. Funds such as FEPI use
-this strategy on large technology stocks to generate income which they pay out to fund investors, similar in many ways to a dividend-paying stock, or coupon payments for bonds. 
-In exchange for this income, investors give up any gains above the strike.
+this strategy on large technology stocks to generate income, which they pay to
+investors much like a stock dividend or a bond coupon.
 
 PS5 asks:
 
-> **Does a covered call fund beat simply holding the shares, and what does it
-> give up?**
+> **Does a covered call fund beat holding the shares, and what does it give
+> up?**
 
 You will answer this question for 29 stocks and funds, in three studies:
 
@@ -25,14 +25,14 @@ You will answer this question for 29 stocks and funds, in three studies:
 - **Study 3: What can we conclude?** You compare the fund with holding the
   shares, with SPY, and with cash over the same dates.
 
-Choose one of two tracks. **Standard** covers the covered call fund.
+Choose one of two tracks. **Standard** studies the covered call fund.
 **Advanced** adds a **collar fund**, which also buys a put each month. The put
 limits how much the fund can lose in a month, and Advanced asks whether the
 puts were worth what they cost.
 
 ## Logistics
 
-- **Dates:** Released Sunday, November 8, 2026. Upload a ZIP of your project
+- **Dates:** Released Sunday, November 8, 2026. Upload a ZIP of your PS5
   folder to Canvas by **11:59 PM ET on Sunday, November 22, 2026**.
 - **Revisions:** Submit attempted work by the deadline, even if it is
   unfinished. You may then revise until December 19, 2026 at 11:59 PM ET. We
@@ -84,7 +84,7 @@ the same as in PS4.
 
    The checker runs the 12 Standard or 20 Advanced checks and writes
    `results/Report.md`. Unfinished calculations show `UNAVAILABLE`. Once your
-   functions run, a full run takes one to two minutes.
+   functions work, the checker takes one to two minutes.
 
 Each function copies a few lines from one of two L11b course examples:
 [A Covered Call Fund on a Hypothetical Stock](https://github.com/varnerlab/CHEME-5660-CourseRepository-Fall-2026/blob/main/lectures/week-11/L11b/CHEME-5660-L11b-Example-CoveredCallFund-SPY-Fall-2026.ipynb)
@@ -100,10 +100,11 @@ and any helper files you add. Put helper functions in `.jl` files under
 ## One month of the fund
 
 PS5 runs a separate fund on each of the 29 tickers (the 29 stocks and
-exchange-traded funds). Each fund holds 1,000 shares of its one ticker and has
-its own cash. Its opening cash is 5% of the value of its own 1,000 shares. For
-example, a fund on a stock priced at 100 USD/share opens with 5,000 USD of cash. At the start of each month,
-the fund sells 10 call contracts on that ticker. Each contract covers 100
+exchange-traded funds). Each fund holds 1,000 shares of one ticker and has a
+separate cash account. The opening cash is 5% of the value of the 1,000 shares.
+For example, a fund on a stock priced at 100 USD/share opens with 5,000 USD of
+cash. At the start of each month, the fund sells 10 call contracts on that
+ticker. Each contract covers 100
 shares, so the 10 contracts cover all 1,000 shares. The calls expire in about a
 month, and each month has four steps:
 
@@ -150,7 +151,7 @@ more trade on each ticker, entered in October 2026. A **trade** is a set of
 options entered on one date and held until they expire about a month later. Each
 ticker has seven trades in a row, entered from April 13 to October 9, 2026, and
 the last trades expire by November 6, 2026. Each trade lasts 28 to 32 days,
-and the next trade usually starts on the day the last one expires. The
+and the next trade usually starts on the day the previous trade expires. The
 [data notes](data/README.md) explain the two exceptions. PS5 uses two options
 from each trade:
 
@@ -160,7 +161,7 @@ from each trade:
   0.10 in absolute value, which puts its strike farther below the share price.
 
 The quotes come from the broker Alpaca's free-plan **indicative** feed, which
-only approximates exchange quotes. Graded results sell each call at its **mid
+only approximates exchange quotes. The graded results use each call's **mid
 price**, halfway between the quoted bid and ask. The report also shows the fund
 selling at the bid, as a rough comparison of what trading might cost.
 
@@ -173,7 +174,7 @@ date to its last expiration date:
 - **Cash** earns the risk-free rate, based on the 13-week Treasury bill yield of
   3.76% per year, the same rate as PS4.
 
-**Simplifications.** A real fund's results would differ in these ways:
+**Simplifications.** PS5 makes these assumptions:
 
 - The fund can borrow any amount at the risk-free rate.
 - Every call is held to expiration and settled at the closing price. The calls
@@ -235,10 +236,7 @@ Rerun the checker, read these tables, and answer Question 2:
 | **Promise versus outcome** | For each ticker, the model's probability that the fund would beat holding, whether it did, and where the outcome falls among the simulated outcomes. |
 
 For **Promise versus outcome**, the model uses each trade's dates, strike
-multiple, and implied volatility, and it simulates only the share prices. When
-an outcome is far from what the model expected, the main cause is the share
-prices. A smaller cause is the difference between the market's premiums and the
-model's premiums.
+multiple, and implied volatility, and it simulates only the share prices.
 
 ## Study 3: What can we conclude?
 
@@ -257,8 +255,7 @@ premium.
 
 1. **`put_premium`** returns the premium of one long American put, priced on the
    binomial tree as in `call_premium`. The collar fund holds each put to
-   expiration and does not use its right to exercise early, which is worth little
-   for a one-month put well below the share price.
+   expiration and does not exercise early.
 2. **`collar_month`** runs one month of the collar fund and returns its wealth
    ratio and ending cash. The call's premium minus the put's premium goes into
    the cash, and the cash grows. The calls' payoff is then paid from the cash,
@@ -278,5 +275,5 @@ months its put paid. Answer Question 3, including part c.
    ```
 
    It flags unanswered questions and writes `MANIFEST.txt`.
-2. ZIP the whole project folder as `CHEME-5660-PS5-<your netid>.zip`.
+2. ZIP the whole PS5 folder as `CHEME-5660-PS5-<your netid>.zip`.
 3. Upload the ZIP to the PS5 assignment on Canvas.

@@ -2,14 +2,14 @@
 # The report calls these functions for every ticker, every month, and every simulated path.
 # Keep the function names, arguments, return types, and docstrings.
 # Replace each error("Complete ...") expression with your calculation.
-# The setup lines and return statements are supplied.
+# The return statements are supplied.
 # Save your code, then run from the PS5 folder:
 # julia --project=. --startup-file=no check_submission.jl
 #
 # Each docstring ends with Course references: the cell of the course example
-# "A Covered Call Fund on a Hypothetical Stock" that does the same calculation, and the matching
-# slide in the PS5 mathematical companion. The example cells wrap their
-# calculation in a let ... end block. Copy only the lines you need and rename
+# "A Covered Call Fund on a Hypothetical Stock" or "A Protective Collar on SPY" that does the
+# same calculation, and the matching slide in the PS5 mathematical companion. The example cells
+# wrap their calculation in a let ... end block. Copy only the lines you need and rename
 # variables to match this file.
 
 """
@@ -166,6 +166,7 @@ function growth_rate(ratios::Vector{Float64}, T::Float64)::Float64
     log_growth = error("Complete growth_rate: add up the logs of the ratios.");
 
     # TODO 2: Divide by the length of the period.
+    # Hint: log_growth / T.
     g = error("Complete growth_rate: divide by T.");
 
     return g;
@@ -195,9 +196,8 @@ Build one long American put with the course `build` function and
 `premium = 0.0`. Then price it with the course `binomial_premium` function:
 `method = :crr`, `h = 60` steps, time `T`, volatility `σ`, share price
 `Sₒ = S`, and rate `μ = r`. An American put can be worth more than a European
-put, because the tree allows exercise before expiration. Listed puts are
-American, so the market charges for that right; the collar fund holds each put
-to expiration and does not use it.
+put, because the tree allows exercise before expiration. The collar fund holds
+each put to expiration and does not exercise early.
 
 ### Course references
 

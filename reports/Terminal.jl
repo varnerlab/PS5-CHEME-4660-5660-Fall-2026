@@ -204,8 +204,11 @@ function print_terminal_table(headers::Vector{String}, rows::Vector{Vector{Strin
     # The width of each column is its widest cell -
     widths = Int[];
     for j in eachindex(headers)
-        column = [headers[j]; [row[j] for row in rows]];
-        push!(widths, maximum(textwidth, column));
+        widest = textwidth(headers[j]);
+        for row in rows
+            widest = max(widest, textwidth(row[j]));
+        end
+        push!(widths, widest);
     end
 
     # A table too wide for the terminal prints as labeled values; three characters separate two columns -

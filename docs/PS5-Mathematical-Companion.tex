@@ -35,8 +35,7 @@ and taxes. The quotes come from an indicative data feed.
 \end{frame}
 
 \begin{frame}{The central question}
-Does a covered call fund beat simply holding the shares, and what does it
-give up?
+Does a covered call fund beat holding the shares, and what does it give up?
 \vspace{0.2em}
 \begin{itemize}\setlength{\itemsep}{0.15em}
 \item \hilite{Study 1: the promise.} Simulate seven months of share prices for
@@ -95,14 +94,14 @@ With $W_{j+1}=N_S S_{j+1}+C_{j+1}$ and $S_{j+1}-(S_{j+1}-K_j)^{+}=\min(S_{j+1},K
 \begin{frame}{The growth rate over a roll}
 Over $N$ months that last $T_{\text{roll}}$ years in all, the fund's growth rate
 is the log of its final over its initial wealth, divided by the time. Multiplying
-the monthly ratios gives final wealth divided by initial wealth, so:
+the wealth ratios gives final wealth divided by initial wealth, so:
 \[
  g=\frac{1}{T_{\text{roll}}}\ln\left(\frac{W_{N+1}}{W_1}\right)
  =\frac{1}{T_{\text{roll}}}\sum_{j=1}^{N}\ln\left(\frac{W_{j+1}}{W_j}\right)
  \qquad(\text{units: }1/\text{yr}).
 \]
 Holding the shares (the same shares and opening cash, selling no calls) has
-its growth rate from the same formula with its own monthly ratios. The sum
+its growth rate from the same formula with its own ratios. The sum
 does not depend on the order of the ratios, and a ratio of exactly 1 adds nothing.
 
 \vspace{0.5em}
@@ -111,6 +110,7 @@ does not depend on the order of the ratios, and a ratio of exactly 1 adds nothin
 first trade's term ($D_1$ calendar days), so $T_{\text{roll}}=7\,\Delta t$.
 \item \hilite{In history:} $T_{\text{roll}}$ is the calendar days from a
 ticker's first entry to its last expiration, divided by 365, about $0.55$ year.
+A gap between two trades (BMY, PFE) adds one more ratio to the sum.
 \end{itemize}
 \end{frame}
 
@@ -194,7 +194,7 @@ the model percentile is:
  q_i=\frac{1}{N_p}\sum_{p=1}^{N_p}
  \one\Bigl[g_{\text{fund}}^{(p)}-g_{\text{hold}}^{(p)}\leq\delta_i\Bigr].
 \]
-\slidenote{Reading}{A percentile near 0\% or 100\% is rare under the model: mostly the share prices, partly the market's premiums against the tree's.}
+\slidenote{Reading}{A percentile near 0\% or 100\% means what happened was rare under the model.}
 \end{frame}
 
 \begin{frame}{Advanced: one month of the collar fund}\label{fr:collar}
@@ -227,13 +227,12 @@ the same cash.
 \begin{itemize}\setlength{\itemsep}{0.5em}
 \item Each month the premium goes into the fund's cash, the cash grows, and
 an exercise is paid from it; the wealth ratio is the shares plus cash at the
-end over the start. The premiums lift the falling months and the strike caps
-the rising ones.
-\item The growth rate over a roll is the sum of the logs of the monthly wealth
-ratios divided by the time in years, in 1/yr for the model and for history.
-\item A model's probability that the fund beats holding is a promise about
-many possible seven-month periods; history gives one period, shared by all
-29 tickers.
+end over the start. The premiums offset share losses, and the calls give up
+gains above the strike.
+\item The growth rate over a roll is the sum of the logs of the wealth ratios
+divided by the time in years, in 1/yr for the model and for history.
+\item The model's probability that the fund beats holding covers many possible
+seven-month periods. History gives one period, shared by all 29 tickers.
 \end{itemize}
 \vspace{0.6em}
 Use these measures to answer the central question.
