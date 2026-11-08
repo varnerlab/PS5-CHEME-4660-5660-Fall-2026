@@ -3,29 +3,29 @@
 **Central question:** Does a covered call fund beat simply holding the shares,
 and what does it give up?
 
-Answer between each question's `<!-- answer-N:start -->` and
-`<!-- answer-N:end -->` markers, replacing the TODO. Label each part with its
-letter, keep it to a few sentences, and cite numbers from `results/Report.md`.
-Growth rates are in 1/yr.
+Write a few sentences for each lettered part, and label each part with its
+letter. Cite numbers from `results/Report.md`, and give growth rates in 1/yr.
+Put your answer between each question's `<!-- answer-N:start -->` and
+`<!-- answer-N:end -->` markers, in place of the TODO.
 
 ## 1. What does the model promise?
 
-**a. Predict** (before writing code; accuracy is not graded). On how many of
-the 29 tickers will the covered call fund grow faster than holding the shares
-over the half-year? Will the market's call premiums be larger or smaller than the
-model's premiums at the historical volatility? Will the collar fund grow
-faster or slower than the covered call fund? Why?
+**a. What do you predict?** Answer before you write any code; accuracy is not
+graded. On how many of the 29 tickers will the fund grow faster than holding
+the shares over the half-year? Will the market's premiums be larger or smaller
+than the model's premiums at the historical volatility? Will the collar fund
+grow faster or slower than the covered call fund? Why?
 
-**b. What the fund gives up.** In **The fund and holding the shares in the
-model**, compare the fund with calls priced at implied volatility with
-holding: the average mean growth rate, the probability of a negative growth
-rate, and the probability that the fund beats holding. Then use **Strike choice in the
-model**: how does a farther strike change each of these, and why?
+**b. What does the fund give up?** In **The fund and holding the shares in the
+model**, use the fund with calls priced at implied volatility. Compare it with
+holding on the average mean growth rate and the probability of a negative growth
+rate. How likely is the fund to beat holding? Then use **Strike choice in the
+model**: how does a farther strike change these numbers, and why?
 
-**c. Pricing the call.** In **Premiums: model and market**, which pricing
-volatility gives premiums closer to the market's, on average? Name one ticker
-where the premium at the historical volatility is far from the market's, and
-explain the gap with its two volatilities.
+**c. Which volatility prices the call better?** In **Premiums: model and
+market**, which volatility gives premiums closer to the market's, on average?
+Name one ticker where the premium at the historical volatility is far from the
+market's. Explain the gap using that ticker's two volatilities.
 
 <!-- answer-1:start -->
 TODO: Answer parts a, b, and c.
@@ -33,17 +33,17 @@ TODO: Answer parts a, b, and c.
 
 ## 2. What happened?
 
-**a. Winners and losers.** On how many tickers did the fund beat holding the
-shares, and how many did the model expect? Using **Each ticker**, what
-separates the tickers where the fund won from those where it lost? Cite the
-growth rates of holding and the months called away.
+**a. Why did the fund win on some tickers and lose on others?** On how many
+tickers did the fund beat holding the shares, and how many did the model expect?
+Using **Each ticker**, what separates the tickers where the fund won from those
+where it lost? Cite the growth rates of holding and the months called away.
 
-**b. Promise versus outcome.** Name the two tickers whose outcomes were rarest
-under the model (percentile nearest 0% or 100%). What did their shares do that
-the model did not expect, and what does that say about the drift and
-volatility the model took from the year before? The model prices each
-simulated call at its implied volatility, not at the market's mid price; could
-that also play a part?
+**b. Which outcomes did the model not expect?** Name the two tickers whose outcomes
+were rarest under the model (percentile nearest 0% or 100%). What did their
+shares do that the model did not expect? What does that say about the drift and
+volatility the model took from the year before? The model prices each simulated
+call at its implied volatility, not at the market's mid price. Could that also
+play a part?
 
 <!-- answer-2:start -->
 TODO: Answer parts a and b.
@@ -51,20 +51,19 @@ TODO: Answer parts a and b.
 
 ## 3. What can we conclude?
 
-**a. Answer the central question.** Compare the fund with holding the shares,
-SPY, and cash in **Growth rates and benchmarks**: the average, the median, the lowest,
-and the highest growth rate. What did the fund give up, what did it get, and
-how much did selling at the bid cost? Did your prediction hold?
+**a. Did the fund beat holding the shares?** In **Growth rates and benchmarks**,
+compare the fund with holding the shares, SPY, and cash: the average, median,
+lowest, and highest growth rate. What did the fund give up, and what did it get?
+How much did selling at the bid cost? Did your prediction hold?
 
-**b. One half-year.** All 29 funds ran over the same half-year. Using the SPY
-row, describe the market over these dates, and give two reasons why this
-result is weaker evidence than 29 separate half-years would be.
+**b. Why is one half-year weak evidence?** All 29 funds ran over the same
+half-year. Using the SPY row, describe the market over these dates. Give two
+reasons why this result is weaker evidence than 29 separate half-years would be.
 
-**c. Did the floor pay for itself?** In **Advanced: the collar fund**, how
-many months did a put pay, and what did the puts cost on average? Compare the
-collar fund's growth rates with those of the covered call fund and holding the
-shares, and with the model's collar fund. What kind of half-year would favor the
-collar?
+**c. Were the puts worth what they cost?** In **Advanced: the collar fund**, how many
+months did a put pay, and what did the puts cost on average? Compare the collar
+fund's growth rates with those of the covered call fund, holding the shares, and
+the model's collar fund. What kind of half-year would favor the collar?
 
 <!-- answer-3:start -->
 TODO: Answer parts a, b, and c.
