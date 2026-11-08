@@ -1,0 +1,76 @@
+# Settings that select the trades in data/trades.csv. Only instructor/build_trades.jl reads this
+# file. Students do not rebuild the data, so these settings are not in config/defaults.toml.
+#
+# After changing a setting: run instructor/build_trades.jl, run
+# instructor/build_strike_increments.jl, and update the SHA-256 hashes in data/README.md.
+
+# Target delta of the call the covered call fund sells (the short_call columns), and of the
+# short put. The script takes the listed option whose delta is closest to this value.
+short_delta = 0.25
+
+# Target delta of the put the collar fund buys (the long_put columns), and of the long call.
+# It must be smaller than short_delta.
+wing_delta = 0.10
+
+# Days to expiration that a trade aims for.
+target_dte = 30
+
+# How many days away from target_dte an expiration can be and still be accepted.
+dte_window = 5
+
+# A chosen option's quote is treated as erratic when its bid-ask spread is wider than this many
+# times the median spread of the neighboring strikes.
+quote_screen_multiple = 3.0
+
+# A bid-ask spread no wider than this (USD/share) is never treated as erratic.
+quote_screen_min_width = 0.25
+
+# How many neighboring strikes on each side of an option the quote screen compares it with.
+quote_screen_neighbors = 2
+
+# Number of daily price changes before the entry date used to estimate the drift and volatility.
+history_window = 252
+
+# Trading days per year, used to annualize the drift and volatility.
+trading_days_per_year = 252
+
+# The last session the options archive must contain. The script stops if the archive ends on a
+# different date, so a newer archive cannot change the trades without a change here.
+archive_end = 2026-11-06
+
+# The stocks and funds in PS5. Each must be in the options archive and in the course price data.
+tickers = ["AAPL", "ABBV", "AMD", "AMGN", "AVGO", "BAC", "BMY", "CVX", "GOOG", "GS",
+           "INTC", "JNJ", "JPM", "LLY", "MRNA", "MSFT", "MU", "NVDA", "OXY", "PFE",
+           "QCOM", "QQQ", "SPY", "TGT", "UNH", "UPS", "WFC", "WMT", "XOM"]
+
+# The group of each ticker, written to the group column of data/trades.csv.
+[groups]
+AAPL = "Technology"
+AMD = "Technology"
+AVGO = "Technology"
+GOOG = "Technology"
+INTC = "Technology"
+MSFT = "Technology"
+MU = "Technology"
+NVDA = "Technology"
+QCOM = "Technology"
+ABBV = "Healthcare"
+AMGN = "Healthcare"
+BMY = "Healthcare"
+JNJ = "Healthcare"
+LLY = "Healthcare"
+MRNA = "Healthcare"
+PFE = "Healthcare"
+UNH = "Healthcare"
+BAC = "Financials"
+GS = "Financials"
+JPM = "Financials"
+WFC = "Financials"
+CVX = "Energy"
+OXY = "Energy"
+XOM = "Energy"
+TGT = "Retail and transport"
+UPS = "Retail and transport"
+WMT = "Retail and transport"
+QQQ = "Exchange-traded funds"
+SPY = "Exchange-traded funds"

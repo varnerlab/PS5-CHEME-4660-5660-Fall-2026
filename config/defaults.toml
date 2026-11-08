@@ -34,6 +34,10 @@ number_of_contracts = 10
 # that sells no calls opens with the same cash.
 cash_reserve = 0.05
 
+# Final wealth over initial wealth given to a simulated path whose wealth reaches zero or below,
+# because a growth rate needs a positive ratio. 0.001 counts as a 99.9 percent loss.
+zero_wealth_ratio = 0.001
+
 # Market benchmark for the report: the same money bought into this fund at the close on each
 # ticker's first entry date and sold at the close on its last expiration date. SPY is a fund
 # that follows the S&P 500 index of large US companies.

@@ -12,8 +12,10 @@
   Fund on a Hypothetical Stock" or "A Protective Collar on SPY" (L11b) and uses
   course types.
   No student data wrangling.
-- The data are the PS4 files plus one more trade per ticker, built with PS4's
-  code and settings from the options archive through 2026-11-06. Default fill is mid; the bid is a
+- `instructor/build_trades.jl` builds the data from the options archive through
+  2026-11-06, with the selection code in `instructor/TradeSelection.jl` and the
+  settings in `instructor/trade_selection.toml`. The data are the PS4 trades plus
+  one more trade per ticker. Default fill is mid; the bid is a
   comparison row only. The README states the quotes are Alpaca's indicative
   free-plan feed and never calls them real bid/ask prices.
 - Performance is a growth rate, g = (1/T) ln(W_T/W_0) in 1/yr, never a

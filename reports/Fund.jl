@@ -325,10 +325,6 @@ end
 
 # --- 3. Study 1: the model ----------------------------------------------------------------------
 
-# The wealth ratio of a simulated fund whose wealth reaches zero or below: a 99.9% loss. That fund
-# has no growth rate of its own, because the log of zero or a negative number is undefined.
-const _ZERO_WEALTH_RATIO = 0.001;
-
 """
     _opening_cash(config, S::Float64) -> Float64
 
@@ -400,9 +396,10 @@ function _model_fund_rates(calls::StudentCalls, ticker::String, S::Matrix{Float6
             end
         end
 
-        # A path whose wealth reached zero counts as a 99.9% loss; any other path uses its monthly wealth ratios -
+        # The log of zero or a negative number is undefined, so a path whose wealth reached zero
+        # uses the ratio in the settings; any other path uses its monthly wealth ratios -
         if wealth_reached_zero
-            rates[p] = _run_growth_rate(calls, ticker, [_ZERO_WEALTH_RATIO], T);
+            rates[p] = _run_growth_rate(calls, ticker, [config.zero_wealth_ratio], T);
         else
             rates[p] = _run_growth_rate(calls, ticker, copy(ratios), T);
         end
@@ -1329,8 +1326,9 @@ Return the two paragraphs that open the report.
 
 ### Returns
 
-- `(text, settings)`: a description of the track, the tickers, and the fund, and a list of the
-  settings that this run used.
+- `(text, settings, zero_wealth_loss_percent)`: a description of the track, the tickers, and the
+  fund, a list of the settings that this run used, and the loss given to a simulated path whose
+  wealth reaches zero, as text.
 """
 function _run_description(track::AbstractString, rolls::Vector{NamedTuple}, config::NamedTuple,
     config_name::AbstractString)::NamedTuple
@@ -1344,6 +1342,7 @@ function _run_description(track::AbstractString, rolls::Vector{NamedTuple}, conf
     opening_cash_percent = @sprintf("%.0f", 100 * config.cash_reserve);
     risk_free_rate = @sprintf("%.4f", config.gᵧ);
     bill_yield_percent = @sprintf("%.2f", 100 * config.risk_free_rate);
+    zero_wealth_loss_percent = @sprintf("%.1f", 100 * (1 - config.zero_wealth_ratio));
 
     # The first paragraph describes the track, the tickers, and the fund -
     text = "$(titlecase(track)) track. $(length(rolls)) tickers, $(trades) trades in all, " *
@@ -1357,7 +1356,7 @@ function _run_description(track::AbstractString, rolls::Vector{NamedTuple}, conf
         "(continuously compounded, from a $(bill_yield_percent)% 13-week bill yield), " *
         "$(config.number_of_paths) simulated paths per ticker, seed $(config.seed), 60-step binomial trees, " *
         "market benchmark $(config.benchmark_ticker).";
-    return (text = text, settings = settings);
+    return (text = text, settings = settings, zero_wealth_loss_percent = zero_wealth_loss_percent);
 end
 
 """
@@ -1377,12 +1376,12 @@ function _write_report_opening(io::IO, title::AbstractString, description::Named
 end
 
 """
-    _write_study_one(io, track, t) -> Nothing
+    _write_study_one(io, track, t, description) -> Nothing
 
 Write the Study 1 section of the report from the report's tables `t`: the premiums, the fund and
-holding the shares in the model, and the strike choice.
+holding the shares in the model, and the strike choice. `description` is from `_run_description`.
 """
-function _write_study_one(io::IO, track::AbstractString, t::NamedTuple)::Nothing
+function _write_study_one(io::IO, track::AbstractString, t::NamedTuple, description::NamedTuple)::Nothing
 
     # What the model does -
     println(io, "## Study 1: What does the model predict?\n");
@@ -1421,7 +1420,7 @@ function _write_study_one(io::IO, track::AbstractString, t::NamedTuple)::Nothing
     println(io, "The same simulated paths, with the fund selling calls at other target strikes (each month, the smallest ",
         "listed strike at or above the target times the share price), all priced at each ticker's call implied volatility ",
         "(the model ignores how implied volatility changes with the strike). If the fund's wealth reaches zero or below ",
-        "on a simulated path, the path stops and counts as a 99.9% loss of the fund's wealth.\n");
+        "on a simulated path, the path stops and counts as a $(description.zero_wealth_loss_percent)% loss of the fund's wealth.\n");
     _markdown_table(io, _display(t.strike_summary, _STRIKE_COLUMNS));
     return nothing;
 end
@@ -1510,7 +1509,7 @@ function _report_markdown(title::AbstractString, track::AbstractString, descript
     # Write each section in turn -
     io = IOBuffer();
     _write_report_opening(io, title, description, result.issues);
-    _write_study_one(io, track, result.tables);
+    _write_study_one(io, track, result.tables, description);
     _write_study_two(io, result.tables);
     if track == "advanced"
         _write_collar_section(io, result.tables);

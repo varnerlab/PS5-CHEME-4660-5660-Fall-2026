@@ -152,13 +152,12 @@ monthly wealth ratios and dividing by the time.
 
 ## The data
 
-PS5 uses the 203 option trades in [data/trades.csv](data/trades.csv), which is
-included in this folder. This file holds the 174 trades you used in PS4 and one
-more trade on each ticker, entered in October 2026. A **trade** is a set of
-options entered on one date and held until they expire about a month later. Each
-ticker has seven trades in a row, entered from April 13 to October 9, 2026, and
-the last trades expire by November 6, 2026. Each trade lasts 28 to 32 days,
-and the next trade usually starts on the day the previous trade expires. The
+PS5 uses the 203 option trades in [data/trades.csv](data/trades.csv). A
+**trade** is a set of options entered on one date and held until the options
+expire about a month later. Each of the 29 tickers has seven trades, and each
+trade lasts 28 to 32 days. The first trade enters on April 13 or 15, 2026, and
+the seventh trade expires on October 30 or November 6, 2026. The next trade
+usually starts on the day the previous trade expires, and the
 [data notes](data/README.md) explain the two exceptions. PS5 uses two options
 from each trade:
 
@@ -185,6 +184,8 @@ date to its last expiration date:
 **Simplifications.** PS5 makes these assumptions:
 
 - The fund can borrow any amount at the risk-free rate.
+- The fund sells a call every month, even when the strike is below the price
+  the fund paid for its shares.
 - Every call is held to expiration and settled at the closing price. The calls
   are American, but PS5 assumes no early exercise.
 - There are no commissions, dividends, or taxes. The fund, holding the shares,
