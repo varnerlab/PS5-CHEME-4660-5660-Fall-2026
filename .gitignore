@@ -11,6 +11,7 @@ instructor/output/
 instructor/validation/*.log
 
 # Keep reference solutions and numerical answers out of the public repository.
+instructor/reference/
 # Only the release tools, the data build, the release notes, and the Canvas copy are tracked.
 # instructor/*
 # !instructor/build_release.py
