@@ -144,8 +144,11 @@ wealth ratios and dividing by the time.
 
 ## The data
 
-The trades are the PS4 trade table. Each ticker has six trades in a row,
-entered from April 13 to September 11, 2026. Each trade lasts 28 to 32 days,
+PS5 uses the 174 option trades in [data/trades.csv](data/trades.csv). This is
+the same file you used in PS4, and it is included in this folder. A **trade** is
+a set of options entered on one date and held until they expire about a month
+later. Each ticker has six trades in a row, entered from April 13 to September
+11, 2026. Each trade lasts 28 to 32 days,
 and the next trade usually starts on the day the last one expires. The
 [data notes](data/README.md) explain the two exceptions. PS5 uses two options
 from each trade:
