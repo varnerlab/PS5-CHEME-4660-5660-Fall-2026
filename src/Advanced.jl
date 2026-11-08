@@ -13,7 +13,7 @@
 # variables to match this file.
 
 """
-    call_premium(S::Float64, K::Float64, T::Float64, σ::Float64, r::Float64) -> Float64
+    call_premium(S::Float64, K::Float64, T::Float64, σ::Float64, gᵧ::Float64) -> Float64
 
 Price the one-month American call the fund sells, on the CRR binomial tree.
 
@@ -23,7 +23,7 @@ Price the one-month American call the fund sells, on the CRR binomial tree.
 - `K`: Strike price (USD/share).
 - `T`: Time to expiration (years).
 - `σ`: Volatility used to price the call (annualized decimal).
-- `r`: Continuously compounded risk-free rate (1/yr).
+- `gᵧ`: Continuously compounded risk-free rate (1/yr).
 
 ### Returns
 
@@ -35,7 +35,7 @@ Build one short American call with the course `build` function and
 `MyAmericanCallContractModel`: strike `K`, `sense = -1`, `copy = 1`, and
 `premium = 0.0` (the premium is what we are computing). Then price the call with the
 course `binomial_premium` function: `method = :crr`, `h = 60` steps, time `T`,
-volatility `σ`, share price `Sₒ = S`, and rate `μ = r`.
+volatility `σ`, share price `Sₒ = S`, and rate `μ = gᵧ`.
 
 ### Course references
 
@@ -43,7 +43,7 @@ volatility `σ`, share price `Sₒ = S`, and rate `μ = r`.
   `call` and compute `𝒫` inside the main loop.
 - PS5 companion: slide 4, 'Pricing the monthly call'.
 """
-function call_premium(S::Float64, K::Float64, T::Float64, σ::Float64, r::Float64)::Float64
+function call_premium(S::Float64, K::Float64, T::Float64, σ::Float64, gᵧ::Float64)::Float64
 
     # TODO 1: Build one short American call with strike K.
     # Hint: build(MyAmericanCallContractModel, (K = ..., sense = -1, copy = 1, premium = 0.0)).
@@ -173,7 +173,7 @@ function growth_rate(ratios::Vector{Float64}, T::Float64)::Float64
 end
 
 """
-    put_premium(S::Float64, K::Float64, T::Float64, σ::Float64, r::Float64) -> Float64
+    put_premium(S::Float64, K::Float64, T::Float64, σ::Float64, gᵧ::Float64) -> Float64
 
 Price the one-month American put the collar fund buys, on the CRR binomial tree.
 
@@ -183,7 +183,7 @@ Price the one-month American put the collar fund buys, on the CRR binomial tree.
 - `K`: Strike price (USD/share).
 - `T`: Time to expiration (years).
 - `σ`: Volatility used to price the put (annualized decimal).
-- `r`: Continuously compounded risk-free rate (1/yr).
+- `gᵧ`: Continuously compounded risk-free rate (1/yr).
 
 ### Returns
 
@@ -195,7 +195,7 @@ Build one long American put with the course `build` function and
 `MyAmericanPutContractModel`: strike `K`, `sense = 1`, `copy = 1`, and
 `premium = 0.0`. Then price the put with the course `binomial_premium` function:
 `method = :crr`, `h = 60` steps, time `T`, volatility `σ`, share price
-`Sₒ = S`, and rate `μ = r`. An American put can be worth more than a European
+`Sₒ = S`, and rate `μ = gᵧ`. An American put can be worth more than a European
 put, because the tree allows exercise before expiration. The collar fund holds
 each put to expiration and does not exercise early.
 
@@ -205,7 +205,7 @@ each put to expiration and does not exercise early.
   `call` and compute `𝒫`, with a put in place of the call.
 - PS5 companion: slide 4, 'Pricing the monthly call'.
 """
-function put_premium(S::Float64, K::Float64, T::Float64, σ::Float64, r::Float64)::Float64
+function put_premium(S::Float64, K::Float64, T::Float64, σ::Float64, gᵧ::Float64)::Float64
 
     # TODO 1: Build one long American put with strike K.
     # Hint: build(MyAmericanPutContractModel, (K = ..., sense = 1, copy = 1, premium = 0.0)).
