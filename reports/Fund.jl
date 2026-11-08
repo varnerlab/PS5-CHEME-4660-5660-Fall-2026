@@ -101,11 +101,16 @@ _share(v) = (v === missing || isempty(v)) ? missing : mean(v);
 # The opening cash of a fund (and of the holding benchmark) whose N_S shares cost S each (USD).
 _opening_cash(config, S::Float64)::Float64 = config.cash_reserve * config.N_S * S;
 
+# The wealth ratio of a simulated fund that is wiped out, a 99.9% loss. A fund whose wealth reaches
+# zero or below has no growth rate, because the log of zero or a negative number is undefined.
+const _WIPED_OUT_RATIO = 0.001;
+
 # Growth rates of every simulated path for the covered call fund. Each month the fund sells the
 # smallest listed strike at or above `target` times the share price, priced with the student's
 # call_premium at volatility σ, and the student's covered_call_month runs the month, with the
-# cash carried from one month to the next. Also returns, for each path, whether the fund's cash
-# ended any month negative (it borrowed).
+# cash carried from one month to the next. A path stops when the fund owes more than its shares
+# are worth. Also returns, for each path, whether the fund's cash ended any month negative (it
+# borrowed).
 function _model_fund_rates(calls, lookup, ticker, S::Matrix{Float64}, target::Float64, σ::Float64,
     Δt::Float64, increment::Float64, config)::NamedTuple
     number_of_months, number_of_paths = size(S, 1) - 1, size(S, 2);
@@ -115,16 +120,30 @@ function _model_fund_rates(calls, lookup, ticker, S::Matrix{Float64}, target::Fl
     ratios = Vector{Float64}(undef, number_of_months);
     for p in 1:number_of_paths
         C = _opening_cash(config, S[1, p]); # cash at the start of the first month (USD)
+        wiped_out = false; # true once the fund owes more than its shares are worth
         for j in 1:number_of_months
             K = listed_call_strike(target * S[j, p], increment);
             𝒫 = _student(calls, lookup, :call_premium, ticker, _check_premium, S[j, p], K, Δt, σ, config.gᵧ);
+
+            # The fund's wealth at the end of this month, from the same inputs. At or below zero, the path stops -
+            end_cash = 𝒟 * (C + N_S * 𝒫) - N_S * max(S[j+1, p] - K, 0.0);
+            if N_S * S[j+1, p] + end_cash <= 0.0
+                wiped_out = true;
+                borrowed[p] = true;
+                break;
+            end
+
             month = _student(calls, lookup, :covered_call_month, ticker, _check_month,
                 N_S, S[j, p], S[j+1, p], K, 𝒫, 𝒟, C);
             ratios[j] = month.ratio;
             C = month.cash; # cash at the end of the month, the start of the next (USD)
             borrowed[p] |= C < 0;
         end
-        rates[p] = _student(calls, lookup, :growth_rate, ticker, _check_rate, copy(ratios), T);
+        if wiped_out
+            rates[p] = _student(calls, lookup, :growth_rate, ticker, _check_rate, [_WIPED_OUT_RATIO], T);
+        else
+            rates[p] = _student(calls, lookup, :growth_rate, ticker, _check_rate, copy(ratios), T);
+        end
     end
     return (rates = rates, borrowed = borrowed);
 end
@@ -647,7 +666,7 @@ function _report_markdown(title, track, description, result)::String
         "the last section says why.\n");
 
     println(io, "## Study 1: What does the model promise?\n");
-    println(io, "For each ticker, the model simulates six months of share prices with geometric Brownian motion, ",
+    println(io, "For each ticker, the model simulates seven months of share prices with geometric Brownian motion, ",
         "using the drift and volatility from the year before the first entry date. Every month, which lasts as long as ",
         "the first trade, the fund sells calls at the smallest strike at or above the first trade's strike multiple ",
         "times the share price on the ticker's listed-strike grid (one spacing per ticker, an approximation of the real ",
@@ -671,14 +690,15 @@ function _report_markdown(title, track, description, result)::String
     println(io, "### Strike choice in the model\n");
     println(io, "The same simulated paths, with the fund selling calls at other target strikes (each month, the smallest ",
         "listed strike at or above the target times the share price), all priced at each ticker's call implied volatility ",
-        "(the model ignores how implied volatility changes with the strike).\n");
+        "(the model ignores how implied volatility changes with the strike). If the fund owes more than its shares are ",
+        "worth on a simulated path, the fund is wiped out: the path stops and counts as a 99.9% loss of the fund's wealth.\n");
     _markdown_table(io, _display(t.strike_summary, _STRIKE_COLUMNS));
 
     println(io, "## Study 2: What happened?\n");
     println(io, "Each ticker's fund replays its real monthly calls: it sells the calls at their mid price, the premium ",
         "goes into its cash at the risk-free rate, and the calls settle at the close on the expiration date, with no early ",
         "exercise. Between an expiration and a later entry, the fund holds its shares and cash. Holding: the same shares ",
-        "and opening cash, with no calls. Growth rates are over each ticker's own dates, about half a year, in 1/yr. They ",
+        "and opening cash, with no calls. Growth rates are over each ticker's own dates, about seven months, in 1/yr. They ",
         "use closing prices only: the fund, holding, and SPY all omit dividends.\n");
     println(io, "### Growth rates and benchmarks\n");
     _markdown_table(io, _display(t.summary, _SUMMARY_COLUMNS));

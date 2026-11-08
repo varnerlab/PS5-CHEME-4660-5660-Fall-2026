@@ -1,7 +1,7 @@
 # PS5 data update plan (instructor only; not in the student release)
 
-Written 2026-11-04. Status: **to do before the Sunday, November 8 release**, on the
-machine that holds the daily option collection.
+Written 2026-11-04. Status: **done 2026-11-08**: 203 trades, seven per ticker, from the options archive
+`data-options-eod-2026-11-06`.
 
 ## Why
 

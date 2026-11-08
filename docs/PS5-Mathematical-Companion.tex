@@ -39,15 +39,15 @@ Does a covered call fund beat simply holding the shares, and what does it
 give up?
 \vspace{0.2em}
 \begin{itemize}\setlength{\itemsep}{0.15em}
-\item \hilite{Study 1: the promise.} Simulate six months of share prices for
+\item \hilite{Study 1: the promise.} Simulate seven months of share prices for
 each ticker, price the calls on the binomial tree, and compare the
 distributions of the growth rates of the fund and of holding the shares and
 cash with no calls.
-\item \hilite{Study 2: what happened.} Replay each ticker's six real monthly
+\item \hilite{Study 2: what happened.} Replay each ticker's seven real monthly
 calls at their market prices, and compare the fund with holding the shares,
 SPY, and cash over the same days.
 \item \hilite{Study 3: the conclusion.} Decide what the fund gave up and what
-it got, and what one half-year of history can tell us.
+it got, and what seven months of history can tell us.
 \end{itemize}
 As in the course example, $S_j$ is the share price at the start of month $j$,
 $K_j$ the calls' strike, $\Prem_{c,j}$ their premium (USD/share), $N_S$ the
@@ -107,10 +107,10 @@ does not depend on the order of the ratios, and a ratio of exactly 1 adds nothin
 
 \vspace{0.5em}
 \begin{itemize}\setlength{\itemsep}{0.3em}
-\item \hilite{In the model:} $N=6$ months of $\Delta t=D_1/365$ year, the
-first trade's term ($D_1$ calendar days), so $T_{\text{roll}}=6\,\Delta t$.
+\item \hilite{In the model:} $N=7$ months of $\Delta t=D_1/365$ year, the
+first trade's term ($D_1$ calendar days), so $T_{\text{roll}}=7\,\Delta t$.
 \item \hilite{In history:} $T_{\text{roll}}$ is the calendar days from a
-ticker's first entry to its last expiration, divided by 365, about $0.47$ year.
+ticker's first entry to its last expiration, divided by 365, about $0.55$ year.
 \end{itemize}
 \end{frame}
 
@@ -232,8 +232,8 @@ the rising ones.
 \item The growth rate over a roll is the sum of the logs of the monthly wealth
 ratios divided by the time in years, in 1/yr for the model and for history.
 \item A model's probability that the fund beats holding is a promise about
-many possible half-years; history gives one half-year, shared by all 29
-tickers.
+many possible seven-month periods; history gives one period, shared by all
+29 tickers.
 \end{itemize}
 \vspace{0.6em}
 Use these measures to answer the central question.

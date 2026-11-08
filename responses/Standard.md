@@ -12,7 +12,7 @@ Put your answer between each question's `<!-- answer-N:start -->` and
 
 **a. What do you predict?** Answer before you write any code; accuracy is not
 graded. On how many of the 29 tickers will the fund grow faster than holding
-the shares over the half-year? Will the market's premiums be larger or smaller
+the shares over the seven months? Will the market's premiums be larger or smaller
 than the model's premiums at the historical volatility? Why?
 
 **b. What does the fund give up?** In **The fund and holding the shares in the
@@ -55,9 +55,9 @@ compare the fund with holding the shares, SPY, and cash: the average, median,
 lowest, and highest growth rate. What did the fund give up, and what did it get?
 How much did selling at the bid cost? Did your prediction hold?
 
-**b. Why is one half-year weak evidence?** All 29 funds ran over the same
-half-year. Using the SPY row, describe the market over these dates. Give two
-reasons why this result is weaker evidence than 29 separate half-years would be.
+**b. Why are seven months weak evidence?** All 29 funds ran over the same
+seven months. Using the SPY row, describe the market over these dates. Give two
+reasons why this result is weaker evidence than 29 separate seven-month periods would be.
 
 <!-- answer-3:start -->
 TODO: Answer parts a and b.

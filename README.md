@@ -18,9 +18,9 @@ You will answer this question for 29 stocks and funds, in three studies:
 
 - **Study 1: What does the model promise?** You simulate share prices, price
   the calls on a binomial tree, and run the fund over thousands of simulated
-  half-years.
-- **Study 2: What happened?** You replay six monthly calls on each ticker, 174
-  trades in all, sold from April to September 2026 at the market's quoted
+  seven-month periods.
+- **Study 2: What happened?** You replay seven monthly calls on each ticker,
+  203 trades in all, sold from April to October 2026 at the market's quoted
   prices.
 - **Study 3: What can we conclude?** You compare the fund with holding the
   shares, with SPY, and with cash over the same dates.
@@ -144,11 +144,12 @@ wealth ratios and dividing by the time.
 
 ## The data
 
-PS5 uses the 174 option trades in [data/trades.csv](data/trades.csv). This is
-the same file you used in PS4, and it is included in this folder. A **trade** is
-a set of options entered on one date and held until they expire about a month
-later. Each ticker has six trades in a row, entered from April 13 to September
-11, 2026. Each trade lasts 28 to 32 days,
+PS5 uses the 203 option trades in [data/trades.csv](data/trades.csv), which is
+included in this folder. This file holds the 174 trades you used in PS4 and one
+more trade on each ticker, entered in October 2026. A **trade** is a set of
+options entered on one date and held until they expire about a month later. Each
+ticker has seven trades in a row, entered from April 13 to October 9, 2026, and
+the last trades expire by November 6, 2026. Each trade lasts 28 to 32 days,
 and the next trade usually starts on the day the last one expires. The
 [data notes](data/README.md) explain the two exceptions. PS5 uses two options
 from each trade:
@@ -184,7 +185,7 @@ date to its last expiration date:
 
 For each ticker, the model uses only what the fund knew on its first trade date:
 
-- **Share prices** follow geometric Brownian motion for six months on 10,000
+- **Share prices** follow geometric Brownian motion for seven months on 10,000
   simulated paths. The drift and volatility are estimated from the year of daily
   closes before that date.
 - **Strikes** are set each month at the same multiple of the share price as the
@@ -242,7 +243,7 @@ model's premiums.
 ## Study 3: What can we conclude?
 
 Answer Question 3. Compare the fund with holding the shares, SPY, and cash, and
-decide what one half-year of history on 29 tickers can and cannot tell you.
+decide what seven months of history on 29 tickers can and cannot tell you.
 Standard students write no more code. Advanced students complete the next
 section first.
 
