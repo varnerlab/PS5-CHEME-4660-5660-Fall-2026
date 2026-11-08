@@ -99,9 +99,13 @@ and any helper files you add. Put helper functions in `.jl` files under
 
 ## One month of the fund
 
-The fund holds 1,000 shares and opens with cash equal to 5% of the value of
-those shares. At the start of each month, it sells 10 call contracts, one for
-every 100 shares, that expire in about a month. The month then has four steps:
+PS5 runs a separate fund on each of the 29 tickers (the 29 stocks and
+exchange-traded funds). Each fund holds 1,000 shares of its one ticker and has
+its own cash. Its opening cash is 5% of the value of its own 1,000 shares. For
+example, a fund on a stock priced at 100 USD/share opens with 5,000 USD of cash. At the start of each month,
+the fund sells 10 call contracts on that ticker. Each contract covers 100
+shares, so the 10 contracts cover all 1,000 shares. The calls expire in about a
+month, and each month has four steps:
 
 1. The fund's **starting wealth** is its shares plus its cash, before it sells
    the calls.
