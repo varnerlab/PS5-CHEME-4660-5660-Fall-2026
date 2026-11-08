@@ -25,13 +25,23 @@ rows = NamedTuple[];
 
 # main loop: one ticker at a time -
 for ticker in sort(unique(String.(trades.ticker)))
+
+    # This ticker's option chain, and the count of each spacing -
     chain = CSV.read(joinpath(ARCHIVE, ticker * ".csv.gz"), DataFrame);
     counts = Dict{Float64,Int}(); # spacing (USD) => number of times it appears
+
+    # one trade at a time -
     for t in eachrow(trades[trades.ticker .== ticker, :])
+
+        # The contracts listed on the trade's entry date for the trade's expiration -
         listed = chain[(chain.date .== t.entry) .& (chain.expiration .== t.expiration), :];
+
+        # The strikes near the share price, for calls and for puts -
         sides = (
             Float64[k for k in listed[listed.type .== "call", :strike] if t.S0 <= k <= (1 + BAND) * t.S0],
             Float64[k for k in listed[listed.type .== "put", :strike] if (1 - BAND) * t.S0 <= k <= t.S0]);
+
+        # Count the spacing between each pair of neighboring strikes -
         for side in sides
             strikes = sort(unique(side));
             for (a, b) in zip(strikes[1:end-1], strikes[2:end])
@@ -40,9 +50,15 @@ for ticker in sort(unique(String.(trades.ticker)))
             end
         end
     end
-    isempty(counts) && error("no listed strikes found for $(ticker)");
+
+    # A ticker with no listed strikes cannot be given an increment -
+    if isempty(counts)
+        error("no listed strikes found for $(ticker)");
+    end
+
+    # The most common spacing; ties go to the smaller spacing -
     best = maximum(values(counts));
-    increment = minimum(k for (k, n) in counts if n == best); # most common spacing; ties go to the smaller
+    increment = minimum(k for (k, n) in counts if n == best);
     push!(rows, (ticker = ticker, strike_increment = increment));
 end
 

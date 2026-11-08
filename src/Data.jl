@@ -68,6 +68,8 @@ The implied volatility of one leg, or the trade's at-the-money value `atm_iv`
 when the leg's is missing.
 """
 function leg_iv(row, role::Symbol)::Float64
+
+    # The leg's own implied volatility, or the at-the-money value when the leg has none -
     value = row[Symbol(role, "_iv")];
     return ismissing(value) ? Float64(row.atm_iv) : Float64(value);
 end
@@ -107,11 +109,20 @@ function load_strike_increments(path::AbstractString, tickers)::Dict{String,Floa
     return increments;
 end
 
-# The position of a price on a strike grid, snapped to the nearest grid line when it is within
-# rounding error of it, so that an exact multiple of the increment is not pushed to the next one.
+"""
+    _grid_position(price::Float64, increment::Float64) -> Float64
+
+Return the position of a price on a strike grid, in units of `increment`. A price within rounding
+error of a grid line snaps to that grid line, so that an exact multiple of the increment is not
+pushed to the next strike.
+"""
 function _grid_position(price::Float64, increment::Float64)::Float64
+
+    # The position on the grid, and the nearest grid line -
     q = price / increment;
     r = round(q);
+
+    # Snap to the grid line when the difference is only rounding error -
     return abs(q - r) <= 1e-9 * max(1.0, abs(q)) ? r : q;
 end
 
@@ -175,14 +186,19 @@ function ticker_rolls(trades::DataFrame, parameters::DataFrame, increments::Abst
     by_id = Dict(p.trade_id => p for p in eachrow(parameters));
     rolls = NamedTuple[];
 
+    # main loop: one ticker at a time, in alphabetical order -
     for ticker in sort(unique(trades.ticker))
 
         # This ticker's trades, in order of entry -
         rows = sort(trades[trades.ticker .== ticker, :], :entry);
         months = NamedTuple[];
         for (j, row) in enumerate(eachrow(rows))
-            gap_days = j == 1 ? 0 : Dates.value(row.entry - rows[j-1, :expiration]); # days between trades
+
+            # The calendar days since the previous trade expired; trades must not overlap -
+            gap_days = j == 1 ? 0 : Dates.value(row.entry - rows[j-1, :expiration]);
             gap_days >= 0 || throw(ArgumentError("$(ticker): a trade enters before the previous one expires."));
+
+            # Keep the fields of this trade that the fund uses -
             push!(months, (entry = row.entry, expiration = row.expiration, days = row.days, gap_days = gap_days,
                 S_start = row.S0, S_end = row.ST,
                 K_call = row.short_call_K, call_mid = row.short_call_mid, call_bid = row.short_call_bid,
@@ -202,11 +218,14 @@ function ticker_rolls(trades::DataFrame, parameters::DataFrame, increments::Abst
             call_fraction = first_row.short_call_mid / first_row.S0,
             put_fraction = first_row.long_put_mid / first_row.S0);
 
+        # The trades and the gaps between them must cover the whole roll -
         first_entry = months[1].entry;
         last_expiration = months[end].expiration;
         total_days = Dates.value(last_expiration - first_entry);
         sum(m.days + m.gap_days for m in months) == total_days ||
             throw(ArgumentError("$(ticker): the trade days and the gaps do not add up to the roll's length."));
+
+        # Add this ticker's roll to the list -
         push!(rolls, (ticker = ticker, group = first_row.group, first_entry = first_entry,
             last_expiration = last_expiration, T = total_days / PS5_CALENDAR_DAYS,
             strike_increment = increments[ticker], months = months, plan = plan));

@@ -88,6 +88,8 @@ function load_config(path::AbstractString)::NamedTuple
     shares_per_contract = config_setting(settings, "shares_per_contract", Int);
     number_of_contracts = config_setting(settings, "number_of_contracts", Int);
     cash_reserve = config_setting(settings, "cash_reserve", Float64);
+
+    # The moneyness grid is a list, so each entry is read and checked on its own -
     if !haskey(settings, "moneyness_grid") || !(settings["moneyness_grid"] isa AbstractVector)
         throw(ArgumentError("Setting 'moneyness_grid' must be a list of numbers."));
     end
@@ -111,6 +113,7 @@ function load_config(path::AbstractString)::NamedTuple
     # The continuously compounded risk-free rate, as in the course examples (1/yr) -
     gᵧ = log(1 + risk_free_rate * bill_term) / bill_term;
 
+    # The settings, with the risk-free rate and the fund's number of shares -
     return (risk_free_rate = risk_free_rate, bill_term = bill_term, gᵧ = gᵧ,
         number_of_paths = number_of_paths, seed = seed,
         moneyness_grid = moneyness_grid, benchmark_ticker = benchmark_ticker,
@@ -130,6 +133,8 @@ Fingerprint a settings file, so a run records exactly which settings it used.
   fingerprint.
 """
 function config_hash(path::AbstractString)::String
+
+    # Use the same line endings on every operating system, then hash the text -
     text = replace(read(path, String), "\r\n" => "\n");
     return bytes2hex(sha256(text));
 end

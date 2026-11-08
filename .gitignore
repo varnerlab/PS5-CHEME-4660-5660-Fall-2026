@@ -17,5 +17,4 @@ instructor/*
 !instructor/validate_release.py
 !instructor/release-notes.md
 !instructor/canvas-assignment-description.html
-!instructor/DATA-UPDATE-PLAN.md
 !instructor/build_strike_increments.jl

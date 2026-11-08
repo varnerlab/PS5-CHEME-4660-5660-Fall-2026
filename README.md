@@ -183,11 +183,11 @@ date to its last expiration date:
 
 ## Study 1: What does the model promise?
 
-For each ticker, the model uses only what the fund knew on its first trade date:
+For each ticker, the model uses the ticker's first trade and listed strikes:
 
 - **Share prices** follow geometric Brownian motion for seven months on 10,000
   simulated paths. The drift and volatility are estimated from the year of daily
-  closes before that date.
+  closes before the first trade.
 - **Strikes** are set each month at the same multiple of the share price as the
   first trade's strike. The fund then sells the nearest listed strike at or
   above that target. The [companion](docs/PS5-Mathematical-Companion.pdf)

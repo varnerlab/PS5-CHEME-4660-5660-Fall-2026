@@ -1,5 +1,7 @@
 # Load the selected track and its helpers from paths relative to this file -
 const _ROOT = @__DIR__;
+
+# Load the printing functions and the checker's functions first, so that the checker can report any later error -
 include(joinpath(_ROOT, "reports", "Terminal.jl"));
 include(joinpath(_ROOT, "test", "Rubric.jl"));
 
@@ -10,6 +12,8 @@ if _USE_SOLUTION
 else
     const _OUTPUT_ROOT = _ROOT;
 end
+
+# The checker accepts no other command-line argument -
 for argument in ARGS
     if argument != "--solution"
         throw(ArgumentError("The only optional argument is --solution."));
@@ -34,6 +38,7 @@ using Random # repeatable share-price simulations
 using Dates # trade dates
 using Printf # readable report tables
 
+# The supplied code, the report, and the public checks -
 include(joinpath(_ROOT, "src", "Support.jl"));
 include(joinpath(_ROOT, "reports", "Fund.jl"));
 include(joinpath(_ROOT, "test", "public_standard_tests.jl"));

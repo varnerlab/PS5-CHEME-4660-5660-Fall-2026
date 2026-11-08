@@ -32,6 +32,7 @@ and an error message in `detail`. An empty message means the check passed.
 """
 function evaluate_public_checks(checks::AbstractVector{<:NamedTuple})::Vector{NamedTuple}
 
+    # main loop: run each check, and catch any error so that the other checks still run -
     results = NamedTuple[];
     for check ∈ checks
         passed = false;
@@ -57,6 +58,8 @@ end
 Count the check results that passed.
 """
 function number_passed(results::AbstractVector{<:NamedTuple})::Int
+
+    # Count one for each check that passed -
     passed = 0;
     for result in results
         if result.passed
@@ -106,6 +109,7 @@ print each distinct diagnostic once after the checks.
 function print_public_test_report(results::AbstractVector{<:NamedTuple},
     title::String; tests_ran::Bool=true)::Nothing
 
+    # The heading; when the checks could not run, there is nothing more to list -
     print_terminal_section(title; major=true);
     if !tests_ran
         print_terminal_text("Checks could not run because a setup or source file did not load. Fix the error below and run the checker again.");
@@ -142,6 +146,7 @@ function print_public_test_report(results::AbstractVector{<:NamedTuple},
         print_terminal_text(result.name * reference; prefix="[$(status)] ", continuation="       ");
     end
 
+    # The summary line -
     passed = number_passed(results);
     println("\nPublic tests: $(passed)/$(length(results)) passed");
 
@@ -178,6 +183,7 @@ function missing_docstrings(function_names::Vector{Symbol})::Vector{Symbol}
     # Julia keeps the docstrings of each module in a table; student code is loaded into Main -
     docstrings = Base.Docs.meta(Main);
 
+    # A required function must be defined and have an entry in that table -
     missing_names = Symbol[];
     for name in function_names
         has_docstring = isdefined(Main, name) && haskey(docstrings, Base.Docs.Binding(Main, name));
@@ -229,16 +235,25 @@ An unreadable file raises a file-read error.
 """
 function response_issues(path::String)::Vector{String}
 
+    # A missing file is the only issue to report -
     if !isfile(path)
         return ["Response file is missing. Restore it from the PS5 ZIP and answer all three questions."];
     end
+
+    # Initialize -
     text = read(path, String);
     issues = String[];
+
+    # main loop: check the answer block of each of the three questions -
     for index in 1:3
+
+        # Find the markers and the text between them -
         start_marker = "<!-- answer-$(index):start -->";
         end_marker = "<!-- answer-$(index):end -->";
         pattern = Regex("<!-- answer-$(index):start -->(.*?)<!-- answer-$(index):end -->", "s");
         blocks = collect(eachmatch(pattern, text));
+
+        # Each question needs exactly one pair of markers -
         if count(start_marker, text) != 1 || count(end_marker, text) != 1 || length(blocks) != 1
             push!(issues, "Question $(index): Keep one $(start_marker) before your answer and one $(end_marker) after it.");
             continue;
@@ -246,6 +261,8 @@ function response_issues(path::String)::Vector{String}
         # Remove HTML comments, then surrounding space (Base.strip: the course package has its own strip) -
         answer = replace(blocks[1].captures[1], r"<!--.*?-->"s => "");
         answer = Base.strip(answer);
+
+        # An answer needs a letter or a number, and must not still contain TODO -
         if !occursin(r"[\p{L}\p{N}]", answer)
             push!(issues, "Question $(index) has no answer. Write your response between its answer markers.");
         elseif occursin(r"\bTODO\b"i, answer)
@@ -308,9 +325,11 @@ It leaves the choice between 3 and 4 to the teaching team.
 function rubric_score(results::AbstractVector{<:NamedTuple};
     tests_ran::Bool, completion::Bool)::Int
 
+    # Initialize -
     passed = number_passed(results);
     total = length(results);
 
+    # The score follows the rubric's thresholds -
     if !tests_ran || passed == 0
         return 0;
     elseif 2*passed <= total

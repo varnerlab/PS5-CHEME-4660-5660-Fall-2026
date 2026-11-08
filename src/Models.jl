@@ -36,6 +36,27 @@ function monthly_prices(plan::NamedTuple, number_of_months::Int, config::NamedTu
 end
 
 """
+    _gbm_step(S::Vector{Float64}, years::Float64, μ::Float64, σ::Float64) -> Vector{Float64}
+
+Advance every simulated share price by one step of geometric Brownian motion.
+
+### Arguments
+
+- `S`: The share price on each path (USD/share).
+- `years`: The length of the step (years).
+- `μ`: The drift (1/yr).
+- `σ`: The volatility (1/√yr).
+
+### Returns
+
+- The share price on each path at the end of the step (USD/share). Each call draws
+  one standard normal number per path from the random number generator.
+"""
+function _gbm_step(S::Vector{Float64}, years::Float64, μ::Float64, σ::Float64)::Vector{Float64}
+    return S .* exp.((μ - σ^2 / 2) * years .+ σ * sqrt(years) .* randn(length(S)));
+end
+
+"""
     roll_prices(roll::NamedTuple, config::NamedTuple, index::Int) -> NamedTuple
 
 Simulate the share price on the real roll's own dates, for the comparison of the
@@ -66,17 +87,22 @@ function roll_prices(roll::NamedTuple, config::NamedTuple, index::Int)::NamedTup
     number_of_months, number_of_paths = length(months), config.number_of_paths;
     start = zeros(number_of_months, number_of_paths);
     finish = zeros(number_of_months, number_of_paths);
-    step(S, years) = S .* exp.((μ - σ^2 / 2) * years .+ σ * sqrt(years) .* randn(number_of_paths));
 
-    # One GBM step for each trade, and one for each gap before the next trade -
+    # main loop: one GBM step for each trade, and one for each gap before the next trade -
     S = fill(roll.plan.S0, number_of_paths);
     for j in 1:number_of_months
+
+        # The days between the previous expiration and this entry, if there are any -
         if j > 1
             gap_days = Dates.value(months[j].entry - months[j-1].expiration);
-            S = gap_days > 0 ? step(S, gap_days / PS5_CALENDAR_DAYS) : S;
+            if gap_days > 0
+                S = _gbm_step(S, gap_days / PS5_CALENDAR_DAYS, μ, σ);
+            end
         end
+
+        # The price at entry, then the price at expiration -
         start[j, :] = S;
-        S = step(S, months[j].days / PS5_CALENDAR_DAYS);
+        S = _gbm_step(S, months[j].days / PS5_CALENDAR_DAYS, μ, σ);
         finish[j, :] = S;
     end
     return (start = start, finish = finish);

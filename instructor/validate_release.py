@@ -3,8 +3,8 @@
 Run from any directory: python3 instructor/validate_release.py [--ref REF] [--tag TAG]
 The release Action runs this with --tag before creating a draft GitHub release.
 It checks the committed tree only; the working tree and instructor/reference are
-not used. Run instructor/validate.jl and instructor/check_release.py locally for
-the reference checks.
+not used. For the reference checks, run julia --project=. check_submission.jl
+--solution locally on each track.
 """
 import argparse
 from pathlib import Path
@@ -67,8 +67,11 @@ def check_contents(student, names):
 
 def check_starter_run(student, track, total):
     """The unfinished starter must report 0 checks, write a manifest, and flag every answer."""
+    # Run the checker on this track, as a student would.
     (student / "TRACK.txt").write_text(track + "\n")
     code, output = run_julia(student, "check_submission.jl")
+
+    # The checker's output must show the unfinished work.
     require(code == 0, f"{track} starter checker exited {code}:\n{output[-8000:]}")
     require(f"Track: {track}" in output, f"{track} starter checker reported the wrong track")
     require(f"Public tests: 0/{total} passed" in output,
@@ -78,6 +81,8 @@ def check_starter_run(student, track, total):
         require(f"Question {number} still contains TODO" in output,
                 f"{track} starter did not warn about question {number}")
     require("differs from the shipped copy" not in output, f"{track} starter flagged defaults.toml as edited")
+
+    # The submission record and the report must exist and agree with the run.
     manifest = (student / "MANIFEST.txt").read_text()
     require(f"public tests passed: 0/{total}" in manifest, f"{track} manifest omitted the check count")
     require("tests ran: true" in manifest and "local solution: false" in manifest,
@@ -86,10 +91,13 @@ def check_starter_run(student, track, total):
 
 
 def main():
+    """Check the committed tree as a student would receive it, and stop at the first failure."""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--ref", default="HEAD", help="Committed tree to check")
     parser.add_argument("--tag", help="Release tag, which must identify the same commit")
     arguments = parser.parse_args()
+
+    # A release tag must identify the checked commit, and the student documents must link to the tag.
     if arguments.tag:
         require(git("rev-parse", f"{arguments.tag}^{{commit}}") ==
                 git("rev-parse", f"{arguments.ref}^{{commit}}"), "Release tag does not match the checked commit")
@@ -98,6 +106,7 @@ def main():
             require(f"/releases/tag/{arguments.tag})" in text or f"/releases/tag/{arguments.tag}\"" in text,
                     f"{name} does not link to the release tag {arguments.tag}")
 
+    # Unpack the source archive that Git would give students, in a temporary folder.
     with tempfile.TemporaryDirectory(prefix="ps5-release-") as temporary:
         directory = Path(temporary)
         archive = directory / "student.zip"
@@ -115,6 +124,7 @@ def main():
         require(code == 0, f"Pkg.instantiate failed:\n{output[-8000:]}")
         print("Recorded Julia environment installed.", flush=True)
 
+        # Both unfinished starters must score zero and still write their reports.
         for track, total in (("standard", 12), ("advanced", 20)):
             check_starter_run(student, track, total)
             print(f"{track.title()} starter: 0/{total}, report, manifest, and answer warnings passed.", flush=True)

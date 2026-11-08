@@ -2,6 +2,7 @@
 import Dates # record when this local check ran
 using SHA: sha256 # record which files were checked
 
+# The assignment folder, which holds this file -
 const _CHECK_ROOT = @__DIR__;
 
 """
@@ -20,6 +21,8 @@ An empty string when everything loads, or the error message when loading
 stops. The checker reports the error instead of crashing.
 """
 function load_assignment(path::String)::String
+
+    # An error in Include.jl or the student's code is returned, so that the checker can report the error -
     try
         include(path);
     catch caught
@@ -48,6 +51,8 @@ Raises an error if an existing file cannot be removed. The checker reports
 this as a setup error.
 """
 function clear_previous_results(root::String)::Nothing
+
+    # Remove each generated file that exists -
     for name in ("model.csv", "strikes.csv", "history.csv", "summary.csv", "promise.csv", "Report.md")
         path = joinpath(root, "results", name);
         if isfile(path)
@@ -207,6 +212,7 @@ Raises an error if a file cannot be read or the record cannot be written.
 """
 function write_manifest(path::String, record::NamedTuple)::Nothing
 
+    # The results of this run, one per line -
     io = open(path, "w");
     println(io, "PS5 CHEME 4/5660 Fall 2026 submission record");
     println(io, "generated: ", Dates.now());
@@ -225,6 +231,8 @@ function write_manifest(path::String, record::NamedTuple)::Nothing
     if !isempty(record.detail)
         println(io, "setup/source error: ", record.detail);
     end
+
+    # The SHA-256 value of each recorded file -
     write_file_record(io, _CHECK_ROOT, record.track, record.source_path);
     close(io);
     return nothing;
@@ -236,12 +244,16 @@ end
 Print how to package and submit the assignment.
 """
 function print_next_steps()::Nothing
+
+    # The three steps to submit the assignment -
     print_terminal_section("Next steps");
     print_terminal_text("Save your code and answers, then rerun the checker."; prefix="1. ", continuation="   ");
     print_terminal_text("Create a ZIP of the entire PS5 folder, using this filename:"; prefix="2. ", continuation="   ");
     println("   CHEME-5660-PS5-<your netid>.zip");
     println("   Replace <your netid> with your own NetID.");
     print_terminal_text("Upload the ZIP to the PS5 assignment on Canvas."; prefix="3. ", continuation="   ");
+
+    # The course's rules for late and revised work -
     println();
     print_terminal_text("Submit attempted work by the initial deadline even if checks fail or cannot run.");
     print_terminal_text("For eligible revisions, use New Attempt on the same Canvas assignment.");
@@ -375,6 +387,8 @@ function main(setup::NamedTuple)::Nothing
     end
     println("Track: ", track);
     println("Public tests: $(passed)/$(length(results)) passed");
+
+    # The docstring result -
     if !tests_ran
         print_terminal_text("Docstrings were not checked. Fix the setup or source error above, then run the checker again.");
     elseif documented
@@ -382,11 +396,15 @@ function main(setup::NamedTuple)::Nothing
     else
         print_terminal_text("Docstrings: Restore the supplied documentation for " * join(string.(missing_docs), ", ") * ".");
     end
+
+    # A solution run stops here, because the response files are not part of the solution -
     if setup.solution
         println("Wrote ", relpath(record_path, _CHECK_ROOT), ".");
         println("This run used the local solution. Student source files were not changed.");
         return nothing;
     end
+
+    # The answer result -
     if track_known
         println("Answers: ", response_path);
         if answers
@@ -400,6 +418,8 @@ function main(setup::NamedTuple)::Nothing
     else
         print_terminal_text("Answers were not checked. Fix the setup error above and run the checker again.");
     end
+
+    # The local rubric feedback, and what to do next -
     println();
     println("Local rubric feedback: ", feedback);
     if all_passed

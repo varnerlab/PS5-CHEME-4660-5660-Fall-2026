@@ -3,6 +3,7 @@ from pathlib import Path
 import re
 from zipfile import ZipFile, ZipInfo, ZIP_DEFLATED
 
+# The repository folder, the name of the student package, and every file that students receive.
 ROOT = Path(__file__).resolve().parents[1]
 PACKAGE = "PS5-CHEME-4660-5660-Fall-2026"
 RELEASE_FILES = [
@@ -22,8 +23,11 @@ RELEASE_FILES = [
 
 def check_starter(root: Path) -> None:
     """Require the standard track and unfinished starter code and responses under root."""
+    # Students start on the Standard track.
     if (root / "TRACK.txt").read_text().strip() != "standard":
         raise ValueError("Reset TRACK.txt to standard before building the release.")
+
+    # Each track's source must hold only its unfinished functions, and each response file its placeholders.
     for track, count in (("Standard", 3), ("Advanced", 5)):
         source = (root / f"src/{track}.jl").read_text()
         if len(re.findall(r'^function ', source, re.M)) != count or len(set(
@@ -36,6 +40,8 @@ def check_starter(root: Path) -> None:
 def build_release() -> Path:
     """Validate starter state and return a reproducible student ZIP under dist/."""
     check_starter(ROOT)
+
+    # Every release file must be a real file inside the repository.
     for name in RELEASE_FILES:
         path = ROOT / name
         if path.is_symlink() or not path.is_file():
@@ -43,6 +49,8 @@ def build_release() -> Path:
         if not path.resolve().is_relative_to(ROOT.resolve()) or any(
             parent.is_symlink() for parent in path.parents if parent != ROOT.parent):
             raise ValueError(f"Unexpected release path: {name}")
+
+    # Write the archive with a fixed date and file mode, so that the same files give the same ZIP.
     destination = ROOT / "dist" / f"{PACKAGE}-student.zip"
     destination.parent.mkdir(exist_ok=True)
     with ZipFile(destination, "w", compression=ZIP_DEFLATED) as archive:
@@ -51,6 +59,8 @@ def build_release() -> Path:
             info.compress_type = ZIP_DEFLATED
             info.external_attr = 0o100644 << 16
             archive.writestr(info, (ROOT / name).read_bytes())
+
+    # Read the archive back: it must hold exactly the allowlist and no private or generated file.
     with ZipFile(destination) as archive:
         expected = {f"{PACKAGE}/{name}" for name in RELEASE_FILES}
         if set(archive.namelist()) != expected or archive.testzip() is not None:
