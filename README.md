@@ -12,21 +12,23 @@ investors much like a stock dividend or a bond coupon.
 > **Does a covered call fund beat holding the shares, and what does it give
 > up?**
 
-You will answer this question for 29 stocks and funds, in three studies:
+You will answer this question for 29 tickers (stocks and exchange-traded funds),
+in three studies:
 
 - **Study 1: What does the model predict?** You simulate share prices, price
   the calls on a binomial tree, and run the fund over thousands of simulated
   seven-month periods.
-- **Study 2: What happened?** You run the fund on the seven real monthly
-  calls of each ticker, 203 trades in all, sold from April to October 2026 at
-  the market's quoted prices.
+- **Study 2: What happened?** You run the fund on the seven monthly calls sold
+  on each ticker from April to October 2026, 203 trades in all, at the prices
+  in the data.
 - **Study 3: What can we conclude?** You compare the fund with holding the
   shares, with SPY, and with cash over the same dates.
 
 Choose one of two tracks. **Standard** studies the covered call fund.
-**Advanced** adds a **collar fund**, which also buys a put each month. The put
-limits how much the fund can lose in a month, and Advanced asks whether the
-puts were worth what they cost.
+**Advanced** adds a **collar fund**, which also buys a put each month. If the
+share price ends below the put's strike, the put pays the fund the difference.
+Advanced compares the growth rate of the collar fund with the growth rates of
+the covered call fund and of holding the shares.
 
 ## Logistics
 
@@ -54,7 +56,7 @@ Use Julia `1.12.7`. The trades and prices are supplied, and the packages are
 the same as in PS4.
 
 1. Download the `Source code (zip)` archive from the tagged
-   [PS5 GitHub release](https://github.com/varnerlab/PS5-CHEME-4660-5660-Fall-2026/releases/tag/ps5-cheme-4660-5660-2026.1)
+   [PS5 GitHub release](https://github.com/varnerlab/PS5-CHEME-4660-5660-Fall-2026/releases/tag/ps5-cheme-4660-5660-2026.2)
    and extract it.
 2. In VS Code, open the extracted folder containing
    [Project.toml](Project.toml), and open a terminal there.
@@ -86,7 +88,8 @@ the same as in PS4.
    `results/Report.md`. Unfinished calculations show `UNAVAILABLE`. Once your
    functions work, the checker takes one to two minutes.
 
-Each function copies a few lines from one of two L11b course examples:
+You complete each function by copying a few lines from one of two L11b course
+examples:
 [A Covered Call Fund on a Hypothetical Stock](https://github.com/varnerlab/CHEME-5660-CourseRepository-Fall-2026/blob/main/lectures/week-11/L11b/CHEME-5660-L11b-Example-CoveredCallFund-SPY-Fall-2026.ipynb)
 and
 [A Protective Collar on SPY](https://github.com/varnerlab/CHEME-5660-CourseRepository-Fall-2026/blob/main/lectures/week-11/L11b/CHEME-5660-L11b-Example-StandardListed-SPY-ProtectiveCollar-Fall-2026.ipynb).
@@ -145,21 +148,24 @@ shares at 110 USD/share. The fund pays 8 USD/share more than the fund receives,
 gain above the strike, so the fund's wealth ratio is below the wealth ratio of
 holding the shares.
 
-**Growth rate.** PS5 measures performance by the growth rate, in 1/yr: the
-natural log of final wealth divided by initial wealth, divided by the time in
-years. The `growth_rate` function computes the growth rate by adding the logs of the
-monthly wealth ratios and dividing by the time.
+**Growth rate.** PS5 measures performance by the growth rate, in 1/yr. To
+compute the growth rate, divide final wealth by initial wealth, take the natural
+log of the result, and divide by the time in years. The `growth_rate` function
+gets the same number by adding the logs of the monthly wealth ratios and
+dividing by the time in years. The fund **beats** holding the shares when the
+fund's growth rate is higher than the growth rate of holding the shares.
 
 ## The data
 
 PS5 uses the 203 option trades in [data/trades.csv](data/trades.csv). A
-**trade** is a set of options entered on one date and held until the options
-expire about a month later. Each of the 29 tickers has seven trades, and each
-trade lasts 28 to 32 days. The first trade enters on April 13 or 15, 2026, and
-the seventh trade expires on October 30 or November 6, 2026. The next trade
-usually starts on the day the previous trade expires, and the
-[data notes](data/README.md) explain the two exceptions. PS5 uses two options
-from each trade:
+**trade** is a set of options on one ticker, all opened on one day, the **entry
+date**, and all held until they expire about a month later, on the **expiration
+date**. Each of the 29 tickers has seven trades, and each trade lasts 28 to 32
+days. A ticker's **first trade** is its earliest trade, with an entry date of
+April 13 or 15, 2026. A ticker's seventh trade has an expiration date of October
+30 or November 6, 2026. Each trade usually starts on the day the previous trade
+expires, and the [data notes](data/README.md) explain the two exceptions. PS5
+uses two options from each trade:
 
 - `short_call` is the call the fund sells. The call's delta is nearest 0.25,
   which puts the call's strike a few percent above the share price.
@@ -168,16 +174,20 @@ from each trade:
   price.
 
 The quotes come from the broker Alpaca's free-plan **indicative** feed, which
-only approximates exchange quotes. The graded results use each call's **mid
-price**, halfway between the quoted bid and ask. The report also shows the fund
-selling at the bid, as an estimate of the trading cost.
+only approximates exchange quotes. The graded results use each option's **mid
+price**, halfway between the quoted bid and ask. The report also shows the
+fund's growth rate when the fund sells each call at the bid. The difference
+between that growth rate and the growth rate at the mid price is an estimate of
+the trading cost.
 
-**Benchmarks.** Each ticker has three benchmarks, measured from its first entry
-date to its last expiration date:
+**Benchmarks.** Each ticker has three benchmarks. Each benchmark runs from the
+entry date of the ticker's first trade to the expiration date of the ticker's
+seventh trade:
 
 - **Holding the shares** keeps the fund's shares and opening cash and sells no
   calls.
-- **SPY** is bought at the first close and held.
+- **SPY** is bought at its closing price on the first of those two dates and
+  sold at its closing price on the second.
 - **Cash** earns the risk-free rate, based on the 13-week Treasury bill yield of
   3.76% per year, the same rate as PS4.
 
@@ -186,26 +196,44 @@ date to its last expiration date:
 - The fund can borrow any amount at the risk-free rate.
 - The fund sells a call every month, even when the strike is below the price
   the fund paid for its shares.
-- Every call is held to expiration and settled at the closing price. The calls
-  are American, but PS5 assumes no early exercise.
-- There are no commissions, dividends, or taxes. The fund, holding the shares,
-  and SPY all use closing prices only.
+- Every call is held to expiration and settled at the closing share price on
+  the expiration date. The calls are American, so a buyer could exercise a call
+  early, but PS5 assumes that no buyer does.
+- There are no commissions or taxes. The fund, holding the shares, and SPY
+  receive no dividends, and their growth rates use closing prices only.
 
 ## Study 1: What does the model predict?
 
-For each ticker, the model uses the ticker's first trade and listed strikes:
+The **model** is a simulation of each ticker's fund over seven months. The
+model takes four values from the ticker's first trade:
+
+- The **share price** on the entry date. Every simulated path starts at this
+  price.
+- The **number of days** to expiration. Every simulated month has this many days.
+- The **call's strike divided by the share price**. Each simulated month, the
+  fund's target strike is this number times that month's share price.
+- The **call's implied volatility**, the volatility at which a pricing model
+  matches the option's market price.
+
+For example, AAPL's first trade has an entry date of April 13, 2026, a share
+price of 259.13 USD/share, and a call with a strike of 275 USD/share that
+expires in 32 days. The simulated AAPL paths start at 259.13 USD/share, each simulated month has 32 days.
+
+Options are sold only at certain strikes, called the **listed strikes**. In the
+model, each ticker's listed strikes are evenly spaced, and the fund sells the
+lowest listed strike at or above a target. The
+[companion](docs/PS5-Mathematical-Companion.pdf) explains the listed strikes.
 
 - **Share prices** follow geometric Brownian motion for seven months on 10,000
-  simulated paths. The drift and volatility are estimated from the year of daily
-  closes before the first trade.
-- **Strikes** are set each month at the same multiple of the share price as the
-  first trade's strike. The fund then sells the nearest listed strike at or
-  above that target. The [companion](docs/PS5-Mathematical-Companion.pdf)
-  explains the listed strikes.
+  simulated paths. The drift and volatility are estimated from the **training
+  data**, the last 253 daily closing prices before the first trade's entry date.
+  None of those prices fall inside the seven months the fund runs.
 - **Premiums** come from your `call_premium` function, every month on every
-  path. The report runs `call_premium` twice: once at the historical
-  volatility, and once at the implied volatility, the volatility at which a
-  pricing model matches the option's market price.
+  path. The report runs the model twice, and each run uses one volatility for
+  all seven months and all paths. The first run uses the historical volatility,
+  estimated from the training data. The second run uses the implied volatility
+  of the call in the first trade. Neither volatility is updated as the simulated
+  months pass.
 
 Complete these functions, which follow Tasks 2 and 3 of the covered call fund
 example:
@@ -225,33 +253,40 @@ Question 1:
 
 | Table | What it shows |
 |:--|:--|
-| **Premiums: model and market** | For each ticker, the model's premium at each volatility, next to the market's mid price. |
-| **The fund and holding the shares in the model** | Averages over the tickers: each strategy's mean growth rate and probability of a negative growth rate, the probability that the fund beats holding, and the probability that the fund's cash goes negative. |
-| **Strike choice in the model** | The same fund with calls at other target strikes. |
+| **Premiums: model and market** | For each ticker's first trade, the premium from your `call_premium` function at each volatility, next to the call's mid price in the data. |
+| **The fund and holding the shares in the model** | Averages over the tickers: the mean growth rate and the probability of a negative growth rate for the fund and for holding the shares, the probability that the fund beats holding the shares, and the probability that the fund's cash is negative at the end of at least one month. |
+| **Strike choice in the model** | The same fund on the same simulated paths, with target strikes of 1.00, 1.02, 1.05, and 1.10 times the share price. |
 
 ## Study 2: What happened?
 
-You write no new code for this study. Your functions now run the fund on the
-real trades. Each month, the fund sells calls at the strike and mid price in the
-data, and the fund uses the closing share prices at entry and expiration. The fund's
+You write no new code for this study. The report now runs your
+`covered_call_month` and `growth_rate` functions on each ticker's seven trades
+in the data. Each month, the fund sells calls at the strike and mid price of
+that trade's `short_call`. The share prices at the start and end of the month
+are the closing prices on the entry date and the expiration date. The fund's
 cash carries over from one month to the next.
 
 Rerun the checker, read these tables, and answer Question 2:
 
 | Table | What it shows |
 |:--|:--|
-| **Growth rates and benchmarks** | The average, median, lowest, and highest growth rate over the tickers for the fund, holding the shares, SPY, and cash, and how many funds beat holding. |
-| **Each ticker** | The months the calls were exercised ("called away"), the months that ended with negative cash, the average premium, and the growth rates of the fund and holding. |
-| **Simulation versus real** | For each ticker, the model's probability that the fund would beat holding, whether the fund beat holding, and where the real result falls among the simulated results. |
+| **Growth rates and benchmarks** | The average, median, lowest, and highest growth rate over the tickers for the fund, the fund selling at the bid, holding the shares, SPY, and cash, and how many funds beat holding the shares. |
+| **Each ticker** | The number of months the calls were exercised ("called away"), the number of months that ended with negative cash, the average premium, the growth rates of the fund and of holding the shares, and whether the fund beat holding the shares. |
+| **Simulation versus real** | For each ticker, the fraction of simulated paths on which the fund beat holding the shares, whether the fund beat holding the shares on the trades in the data, the fund's growth rate minus the growth rate of holding the shares on those trades, and the percentage of simulated paths on which that difference was at or below the difference on the trades in the data. |
 
-For **Simulation versus real**, the model uses each trade's dates, moneyness
-(strike divided by share price), and implied volatility, and the model simulates only
-the share prices.
+For **Simulation versus real**, the report runs a second simulation of each
+ticker's fund. Only the share prices are simulated. Each of the ticker's seven
+trades keeps its number of days, its strike divided by the share price at
+entry, and its call's implied volatility, and the days between trades stay the
+same. Each simulated call has the lowest listed strike at or above its target,
+and the call's premium comes from the binomial tree at the call's implied
+volatility, not from the mid price in the data.
 
 ## Study 3: What can we conclude?
 
-Answer Question 3. Compare the fund with holding the shares, SPY, and cash, and
-decide what seven months of history on 29 tickers can and cannot tell you.
+Answer Question 3. Compare the growth rate of the fund with the growth rates of
+holding the shares, SPY, and cash. Then explain why 29 tickers over the same
+seven months are weaker evidence than 29 separate seven-month periods would be.
 Standard students write no more code. Advanced students complete the next
 section first.
 
@@ -267,14 +302,17 @@ premium.
    binomial tree as in `call_premium`. The collar fund holds each put to
    expiration and does not exercise early.
 2. **`collar_month`** runs one month of the collar fund and returns the
-   collar fund's wealth ratio and ending cash. The call's premium minus the put's premium goes into
-   the cash, and the cash grows. The calls' payoff is then paid from the cash,
-   and the puts' payoff is added to the cash. The fund's calls and puts each
-   cover all of the fund's shares.
+   collar fund's wealth ratio and ending cash. The call's premium minus the
+   put's premium goes into the cash, and the cash earns the risk-free rate over
+   the month. The calls' payoff is then paid from the cash, and the puts' payoff
+   is added to the cash. The fund's calls and puts each cover all of the fund's
+   shares.
 
 Rerun the checker. The Study 1 tables now include the collar fund in the model.
-The **Advanced: the collar fund** table shows each ticker's collar fund and the
-months the put paid. Answer Question 3, including part c.
+The **Advanced: the collar fund** table shows, for each ticker, the number of
+months the put paid, the number of months the calls were exercised, the put's
+average cost, and the growth rates of the collar fund, the covered call fund,
+and holding the shares. Answer Question 3, including part c.
 
 ## Check and submit your work
 

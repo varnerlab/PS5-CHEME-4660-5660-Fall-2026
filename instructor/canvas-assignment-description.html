@@ -24,16 +24,16 @@ You can also paste this file's contents into the Canvas HTML editor.
 <p>
   A covered call fund owns shares and a cash account, and every month sells
   one call contract for every 100 shares it owns. The premiums go into the
-  fund's cash and offset share losses, and the calls give up gains above the strike.
-  In PS5 you run such a fund twice for each of
-  29 stocks and funds: first in a model, simulating the share price with
-  geometric Brownian motion and pricing the calls on the binomial tree as in
-  the course example, and then on 203 real trades,
-  entered from April to October 2026, at their market prices. You compare the fund's
-  growth rate with the growth rate of holding the shares (the same shares and cash,
-  selling no calls), SPY, and cash, and ask how well the
-  model's prediction matched what happened. The Advanced track adds a collar
-  fund, which also buys a put each month. You are graded on correct
+  fund's cash. If the share price ends above the strike, the fund gives up
+  every gain above the strike. In PS5 you run such a fund twice for each of
+  29 tickers (stocks and exchange-traded funds). First you run the fund in a
+  model, which simulates the share price with geometric Brownian motion and
+  prices the calls on the binomial tree as in the course example. Then you run
+  the fund on the 203 trades in the data, sold from April to October 2026, at
+  the mid prices in the data. You compare the fund's growth rate with the growth
+  rates of holding the shares (the same shares and cash, selling no calls), SPY,
+  and cash, and you compare the model's prediction with what happened. The
+  Advanced track adds a collar fund, which also buys a put each month. You are graded on correct
   calculations and interpretation, never on whether the fund beats holding the shares.
 </p>
 
@@ -41,17 +41,17 @@ You can also paste this file's contents into the Canvas HTML editor.
 
 <ul>
   <li>
-    <a href="https://github.com/varnerlab/PS5-CHEME-4660-5660-Fall-2026/blob/ps5-cheme-4660-5660-2026.1/README.md">
+    <a href="https://github.com/varnerlab/PS5-CHEME-4660-5660-Fall-2026/blob/ps5-cheme-4660-5660-2026.2/README.md">
       Read the complete PS5 instructions
     </a>
   </li>
   <li>
-    <a href="https://github.com/varnerlab/PS5-CHEME-4660-5660-Fall-2026/releases/tag/ps5-cheme-4660-5660-2026.1">
+    <a href="https://github.com/varnerlab/PS5-CHEME-4660-5660-Fall-2026/releases/tag/ps5-cheme-4660-5660-2026.2">
       Download the PS5 release
     </a>
   </li>
   <li>
-    <a href="https://github.com/varnerlab/PS5-CHEME-4660-5660-Fall-2026/blob/ps5-cheme-4660-5660-2026.1/RUBRIC.md">
+    <a href="https://github.com/varnerlab/PS5-CHEME-4660-5660-Fall-2026/blob/ps5-cheme-4660-5660-2026.2/RUBRIC.md">
       Read the grading rubric
     </a>
   </li>

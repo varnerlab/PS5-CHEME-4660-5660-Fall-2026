@@ -975,16 +975,16 @@ function model_summary(track::String, model::DataFrame)::DataFrame
     rows = NamedTuple[
         (strategy = "Holding: shares and cash, no calls", premium = "—", mean_g = _column_mean(model, :holding_mean),
             loss = _column_mean(model, :holding_loss), beats = "—", borrows = "—"),
-        (strategy = "Fund, calls at historical vol", premium = _column_mean(model, :premium_hist),
+        (strategy = "Fund, historical volatility", premium = _column_mean(model, :premium_hist),
             mean_g = _column_mean(model, :fund_hist_mean), loss = _column_mean(model, :fund_hist_loss),
             beats = _column_mean(model, :fund_hist_beats), borrows = _column_mean(model, :fund_hist_borrows)),
-        (strategy = "Fund, calls at implied vol", premium = _column_mean(model, :premium_iv),
+        (strategy = "Fund, implied volatility", premium = _column_mean(model, :premium_iv),
             mean_g = _column_mean(model, :fund_iv_mean), loss = _column_mean(model, :fund_iv_loss),
             beats = _column_mean(model, :fund_iv_beats), borrows = _column_mean(model, :fund_iv_borrows))];
 
     # Advanced: the collar fund's premium is the call's premium minus the put's -
     if track == "advanced"
-        push!(rows, (strategy = "Collar fund, at implied vol",
+        push!(rows, (strategy = "Collar fund, implied volatility",
             premium = _column_mean(model, :premium_iv) - _column_mean(model, :put_premium_iv),
             mean_g = _column_mean(model, :collar_mean), loss = _column_mean(model, :collar_loss),
             beats = _column_mean(model, :collar_beats), borrows = _column_mean(model, :collar_borrows)));
@@ -1140,28 +1140,28 @@ const _SUMMARY_COLUMNS = [
     ("Median", :median_g, _g),
     ("Lowest", :lowest_g, _g),
     ("Highest", :highest_g, _g),
-    ("Tickers that beat holding", :beat_holding, _text)];
+    ("Tickers where the fund beat holding", :beat_holding, _text)];
 const _MODEL_SUMMARY_COLUMNS = [
     ("Strategy", :strategy, _text),
     ("Avg premium (% of share price)", :premium, _premium_or_text),
     ("Avg mean growth rate (1/yr)", :mean_g, _g),
-    ("Avg P(growth rate < 0)", :loss, _rate),
-    ("Avg P(beats holding)", :beats, _rate_or_text),
-    ("Avg P(cash goes negative)", :borrows, _rate_or_text)];
+    ("Avg probability of a negative growth rate", :loss, _rate),
+    ("Avg probability of beating holding", :beats, _rate_or_text),
+    ("Avg probability of negative cash", :borrows, _rate_or_text)];
 const _PREMIUM_COLUMNS = [
     ("Ticker", :ticker, _text),
     ("Call strike / share price", :call_moneyness, _moneyness),
-    ("Historical vol", :σ̂, _vol),
-    ("Call implied vol", :call_iv, _vol),
-    ("Model premium at historical vol", :premium_hist, _premium),
-    ("Model premium at implied vol", :premium_iv, _premium),
-    ("Market premium (mid)", :premium_market, _premium)];
+    ("Historical volatility", :σ̂, _vol),
+    ("Call implied volatility", :call_iv, _vol),
+    ("Model premium at historical volatility", :premium_hist, _premium),
+    ("Model premium at implied volatility", :premium_iv, _premium),
+    ("Market premium (mid price)", :premium_market, _premium)];
 const _STRIKE_COLUMNS = [
     ("Target strike / share price", :moneyness, _moneyness),
-    ("Avg mean of fund minus holding growth rate (1/yr)", :difference_mean, _g),
-    ("Avg P(fund beats holding)", :beats, _rate),
-    ("Avg P(fund growth rate < 0)", :fund_loss, _rate),
-    ("Avg P(cash goes negative)", :borrows, _rate)];
+    ("Avg difference in growth rate, fund minus holding (1/yr)", :difference_mean, _g),
+    ("Avg probability of beating holding", :beats, _rate),
+    ("Avg probability of a negative fund growth rate", :fund_loss, _rate),
+    ("Avg probability of negative cash", :borrows, _rate)];
 const _HISTORY_COLUMNS = [
     ("Ticker", :ticker, _text),
     ("Months", :months, _text),
@@ -1173,10 +1173,10 @@ const _HISTORY_COLUMNS = [
     ("Fund beat holding", :fund_beat, _yesno)];
 const _SIMULATION_VERSUS_REAL_COLUMNS = [
     ("Ticker", :ticker, _text),
-    ("Model P(fund beats holding)", :model_beats, _rate),
+    ("Model probability of beating holding", :model_beats, _rate),
     ("Fund beat holding", :fund_beat, _yesno),
     ("Fund minus holding growth rate (1/yr)", :difference, _g),
-    ("Model percentile of what happened", :percentile, _rate)];
+    ("Model percentile of the difference", :percentile, _rate)];
 const _COLLAR_COLUMNS = [
     ("Ticker", :ticker, _text),
     ("Months the put paid", :months_put_paid, _text),
@@ -1315,8 +1315,8 @@ function _simulation_versus_real_sentence(table::DataFrame)::String
     # The expected count is the sum of the model's probabilities -
     expected = sum(Float64.(table.model_beats));
     actual = count(Bool.(table.fund_beat));
-    return @sprintf("The model expected the fund to beat holding the shares on %.1f of the %d tickers (the sum of the probabilities); the fund beat holding the shares on %d.",
-        expected, nrow(table), actual);
+    return @sprintf("Adding the model's probabilities over the %d tickers gives %.1f, the number of tickers on which the model expected the fund to beat holding the shares. On the trades in the data, the fund beat holding the shares on %d tickers.",
+        nrow(table), expected, actual);
 end
 
 """
@@ -1385,42 +1385,52 @@ function _write_study_one(io::IO, track::AbstractString, t::NamedTuple, descript
 
     # What the model does -
     println(io, "## Study 1: What does the model predict?\n");
-    println(io, "For each ticker, the model simulates seven months of share prices with geometric Brownian motion, ",
-        "using the drift and volatility from the year before the first entry date. A simulated month lasts as long as ",
-        "the first trade. Each month, the fund sells calls at the smallest listed strike at or above the first trade's ",
-        "moneyness (strike divided by share price) times the share price, and the model prices the calls on the binomial tree. Each ticker has one ",
-        "strike spacing, an approximation of the real listed strikes. ",
-        "The premiums go into the fund's cash, which earns the risk-free rate; when a call is exercised, the fund buys ",
-        "new shares from its cash, borrowing at the risk-free rate when the cash runs out. Holding: the same shares and ",
-        "opening cash, with no calls. Growth rates are in 1/yr and use prices only: the fund and holding both omit dividends.\n");
+    println(io, "The model simulates each ticker's fund for seven months. The simulated share prices follow geometric ",
+        "Brownian motion, with the drift and volatility estimated from the training data, the last 253 daily closing ",
+        "prices before the entry date of the ticker's first trade. Every simulated path starts at the share price on that entry date, and every simulated ",
+        "month has as many days as the first trade. Each simulated month, the fund's target strike is the first trade's ",
+        "strike divided by the first trade's share price, times that month's share price. The fund sells the lowest ",
+        "listed strike at or above the target. In the model, each ticker's listed strikes are evenly spaced, which ",
+        "approximates the strikes listed in the market. The binomial tree gives each call's premium.\n");
+    println(io, "The premium goes into the fund's cash, which earns the risk-free rate. When the calls are exercised, the ",
+        "fund sells its shares at the strike and buys the same number of new shares at the share price, so the fund's cash ",
+        "falls by the difference. The fund borrows at the risk-free rate when its cash runs out. Holding the shares means ",
+        "the same shares and the same opening cash, with no calls sold. Growth rates are in 1/yr. The growth rates of the ",
+        "fund and of holding the shares use prices only and include no dividends.\n");
 
     # The first trade's premiums, in the model and in the market -
     println(io, "### Premiums: model and market\n");
-    println(io, "Each premium is a percentage of the share price, for the first trade of each ticker and that trade's time ",
-        "to expiration. The model prices the call on the binomial tree at the historical volatility or at the call's ",
-        "implied volatility; the market premium is the call's mid price.\n");
+    println(io, "This table uses each ticker's first trade. Each premium is a percentage of the share price on the entry ",
+        "date. The two model premiums come from your `call_premium` function, one at the historical volatility estimated ",
+        "from the training data and one at the call's implied volatility. The market premium is the ",
+        "call's mid price in the data.\n");
     _markdown_table(io, _display(vcat(t.model, _premium_average_row(t.model); cols = :union), _PREMIUM_COLUMNS));
 
     # The strategies in the model; the Advanced track also explains the collar fund's premium -
     println(io, "### The fund and holding the shares in the model\n");
-    println(io, "Each value is averaged over the tickers. For each ticker the model gives a mean growth rate and the ",
-        "probabilities over the ticker's simulated paths.\n");
+    println(io, "The report computes each value for one ticker over that ticker's simulated paths, then averages the ",
+        "value over the tickers.\n");
     _markdown_table(io, _display(t.model_summary, _MODEL_SUMMARY_COLUMNS));
     collar_note = "";
     if track == "advanced"
-        collar_note = "Collar fund: the premium is the call's premium minus the put's premium. ";
+        collar_note = "For the collar fund, the premium column shows the call's premium minus the put's premium. ";
     end
-    println(io, "Fund: the covered call fund, with its calls priced at the historical volatility or at the call's ",
-        "implied volatility. ", collar_note,
-        "P(beats holding): the probability that the fund's growth rate is above the growth rate of holding on the same path. ",
-        "P(cash goes negative): the probability that the fund's cash ends at least one month negative, so the fund borrowed.\n");
+    println(io, "The two Fund rows are the covered call fund, with its calls priced at the historical volatility and at ",
+        "the first trade's implied volatility. ", collar_note,
+        "Probability of beating holding: the fraction of simulated paths on which the fund's growth rate is above the ",
+        "growth rate of holding the shares on the same path. ",
+        "Probability of negative cash: the fraction of simulated paths on which the fund's cash is negative at the end of ",
+        "at least one month, which means the fund borrowed.\n");
 
     # The strike choice -
     println(io, "### Strike choice in the model\n");
-    println(io, "The same simulated paths, with the fund selling calls at other target strikes (each month, the smallest ",
-        "listed strike at or above the target times the share price), all priced at each ticker's call implied volatility ",
-        "(the model ignores how implied volatility changes with the strike). If the fund's wealth reaches zero or below ",
-        "on a simulated path, the path stops and counts as a $(description.zero_wealth_loss_percent)% loss of the fund's wealth.\n");
+    println(io, "This table runs the fund on the same simulated paths with different target strikes. The first column is ",
+        "the target strike divided by the share price. Each month, the fund sells the lowest listed strike at or above ",
+        "the target. Every call on a ticker is priced at the implied volatility of that ticker's first call, even though ",
+        "implied volatility in the market differs from one strike to another. The second column is the fund's growth rate ",
+        "minus the growth rate of holding the shares, averaged over the paths and then over the tickers. If the fund's ",
+        "wealth reaches zero or below on a simulated path, that path stops and counts as a ",
+        "$(description.zero_wealth_loss_percent)% loss of the fund's wealth.\n");
     _markdown_table(io, _display(t.strike_summary, _STRIKE_COLUMNS));
     return nothing;
 end
@@ -1435,33 +1445,48 @@ function _write_study_two(io::IO, t::NamedTuple)::Nothing
 
     # How the fund runs on the real trades -
     println(io, "## Study 2: What happened?\n");
-    println(io, "Each ticker's fund runs on the ticker's real monthly calls: the fund sells the calls at their mid price, the premium ",
-        "goes into the fund's cash at the risk-free rate, and the calls settle at the close on the expiration date, with no early ",
-        "exercise. Between an expiration and a later entry, the fund holds its shares and cash. Holding: the same shares ",
-        "and opening cash, with no calls. Growth rates are over each ticker's own dates, about seven months, in 1/yr. The growth rates ",
-        "use closing prices only: the fund, holding, and SPY all omit dividends.\n");
+    println(io, "Each ticker's fund runs on the ticker's seven trades in the data. Each month, the fund sells the calls at ",
+        "their mid price, and the premium goes into the fund's cash, which earns the risk-free rate. The calls settle at the ",
+        "closing share price on the expiration date, with no early exercise. When a trade starts after the previous trade's ",
+        "expiration date, the fund holds its shares and cash between the two dates. Holding the shares means the same shares ",
+        "and the same opening cash, with no calls sold.\n");
+    println(io, "Each growth rate runs from the entry date of the ticker's first trade to the expiration date of the ticker's ",
+        "seventh trade, about seven months, and is in 1/yr. The growth rates of the fund, holding the shares, and SPY use ",
+        "closing prices only and include no dividends.\n");
 
     # The growth rates of every strategy and benchmark -
     println(io, "### Growth rates and benchmarks\n");
     _markdown_table(io, _display(t.summary, _SUMMARY_COLUMNS));
-    println(io, "Calls sold at the bid: the same fund, receiving the bid instead of the mid; the gap is an estimate of the trading cost ",
-        "if the quoted spreads were real. The benchmarks are over each ticker's own dates.\n");
+    println(io, "Each row has one growth rate per ticker, and the columns summarize those growth rates over the tickers. ",
+        "Fund (calls sold at the bid) is the same fund, selling each call at the bid instead of the mid price. The ",
+        "difference between the two fund rows is an estimate of the trading cost. The estimate is rough because the quotes ",
+        "come from Alpaca's indicative feed, which only approximates exchange quotes. Each benchmark uses each ticker's own ",
+        "dates, so SPY's growth rate differs from one ticker to another.\n");
 
     # One row per ticker -
     println(io, "### Each ticker\n");
     _markdown_table(io, _display(t.history, _HISTORY_COLUMNS));
+    println(io, "Months called away: the number of months in which the share price at expiration was above the call's ",
+        "strike, so the calls were exercised. Months ending with negative cash: the number of months that ended with the ",
+        "fund's cash below zero, which means the fund had borrowed. Avg premium: the average of the calls' mid prices, ",
+        "each as a percentage of the share price on its entry date. Growth rates are in 1/yr. Fund beat holding: yes when ",
+        "the fund's growth rate is higher than the growth rate of holding the shares.\n");
 
     # The model's prediction against what happened -
     println(io, "### Simulation versus real\n");
-    println(io, "Here the model follows each ticker's real roll: every trade keeps its real strike as a multiple of the ",
-        "share price at entry, its real length, its call's implied volatility, and the days between trades. The share ",
-        "prices are simulated, with the drift and volatility from the year before the first entry date; each simulated ",
-        "call has the smallest listed strike at or above that multiple of the simulated price, and the call's premium is the ",
-        "binomial tree's at the call's implied volatility, not the market's mid price.\n");
+    println(io, "This table runs a second simulation of each ticker's fund. Only the share prices are simulated, with the ",
+        "drift and volatility estimated from the training data. ",
+        "Each of the ticker's seven trades keeps its number of days, its strike divided by the share price at entry, and ",
+        "its call's implied volatility, and the days between trades stay the same. Each simulated call has the lowest ",
+        "listed strike at or above that multiple of the simulated share price. The call's premium comes from the binomial ",
+        "tree at the call's implied volatility, not from the mid price in the data.\n");
     println(io, _simulation_versus_real_sentence(t.simulation_versus_real), "\n");
     _markdown_table(io, _display(t.simulation_versus_real, _SIMULATION_VERSUS_REAL_COLUMNS));
-    println(io, "Model percentile of what happened: the share of the model's simulated fund-minus-holding growth rates ",
-        "at or below the real one. Near 0% or 100% means what happened was rare under the model.\n");
+    println(io, "Model probability of beating holding: the fraction of simulated paths on which the fund's growth rate is ",
+        "above the growth rate of holding the shares. Fund beat holding and Fund minus holding growth rate come from the ",
+        "trades in the data. Model percentile of the difference: the percentage of simulated paths on which the fund's ",
+        "growth rate minus the growth rate of holding the shares was at or below the value from the trades in the data. ",
+        "A percentile near 0% or 100% means that very few simulated paths gave a value that low or that high.\n");
     return nothing;
 end
 
@@ -1472,9 +1497,14 @@ Write the Advanced section of the report from the report's tables `t`.
 """
 function _write_collar_section(io::IO, t::NamedTuple)::Nothing
     println(io, "## Advanced: the collar fund\n");
-    println(io, "The collar fund also buys one-month puts each month (the trade's protective put, near 0.10 delta), ",
-        "paid for in part by the calls, with the same cash account. Months the put paid: closes below the put's strike.\n");
+    println(io, "The collar fund sells the same calls as the covered call fund and also buys the `long_put` of each trade, ",
+        "the put whose delta is nearest 0.10 in absolute value. The call's mid price minus the put's mid price goes into ",
+        "the fund's cash, and the fund keeps the same kind of cash account as the covered call fund.\n");
     _markdown_table(io, _display(t.history, _COLLAR_COLUMNS));
+    println(io, "Months the put paid: the number of months in which the share price at expiration was below the put's ",
+        "strike. Months called away: the number of months in which the share price at expiration was above the call's ",
+        "strike. Avg put cost: the average of the puts' mid prices, each as a percentage of the share price on its entry ",
+        "date. Growth rates are in 1/yr.\n");
     return nothing;
 end
 
@@ -1537,11 +1567,18 @@ function _print_terminal_report(title::AbstractString, description::NamedTuple, 
     print_terminal_section("Study 1: the model, averaged over the tickers");
     shown = _display(t.model_summary, _TERMINAL_MODEL_COLUMNS);
     print_terminal_table(shown.headers, shown.rows; right_columns = shown.right);
+    println();
+    print_terminal_text("g is the growth rate in 1/yr. P(g < 0) is the fraction of simulated paths with a negative " *
+        "growth rate. P(beats holding) is the fraction of simulated paths on which the fund's growth rate is above " *
+        "the growth rate of holding the shares.");
 
     # What happened -
     print_terminal_section("Study 2: what happened (growth rates in 1/yr)");
     shown = _display(t.summary, _TERMINAL_SUMMARY_COLUMNS);
     print_terminal_table(shown.headers, shown.rows; right_columns = shown.right);
+    println();
+    print_terminal_text("Avg g and Median summarize the growth rates over the tickers. Beat holding is the number of " *
+        "tickers on which the fund's growth rate is above the growth rate of holding the shares.");
     println();
     print_terminal_text(_simulation_versus_real_sentence(t.simulation_versus_real));
 
