@@ -6,22 +6,20 @@ In return, the buyer gets the right to buy the shares at a fixed price, the
 **strike**, when the call expires. If the share price ends below the strike,
 the fund keeps its shares and the premium. If the share price ends above the
 strike, the fund gives up every gain above the strike. Funds such as FEPI use
-this strategy on large technology stocks to generate income, which they pay to
+this strategy on large technology stocks to generate income, which the funds pay to
 investors much like a stock dividend or a bond coupon.
-
-PS5 asks:
 
 > **Does a covered call fund beat holding the shares, and what does it give
 > up?**
 
 You will answer this question for 29 stocks and funds, in three studies:
 
-- **Study 1: What does the model promise?** You simulate share prices, price
+- **Study 1: What does the model predict?** You simulate share prices, price
   the calls on a binomial tree, and run the fund over thousands of simulated
   seven-month periods.
-- **Study 2: What happened?** You replay seven monthly calls on each ticker,
-  203 trades in all, sold from April to October 2026 at the market's quoted
-  prices.
+- **Study 2: What happened?** You run the fund on the seven real monthly
+  calls of each ticker, 203 trades in all, sold from April to October 2026 at
+  the market's quoted prices.
 - **Study 3: What can we conclude?** You compare the fund with holding the
   shares, with SPY, and with cash over the same dates.
 
@@ -42,9 +40,10 @@ puts were worth what they cost.
   confirmed by the teaching team, also earns one Magic Point. A 3 or 4 requires
   passing every check; the teaching team then reviews your code and answers.
   You are graded on your calculations and interpretation, not on whether the
-  fund wins. See the [grading rubric](RUBRIC.md).
-- **Reference solution:** Released after the deadline. Use it to understand
-  your mistakes, but do not copy it. Copying it results in a score of 0.
+  fund beats holding the shares. See the [grading rubric](RUBRIC.md).
+- **Reference solution:** Released after the deadline. Use the solution to
+  understand your mistakes, but do not copy the solution. Copying results in a
+  score of 0.
 - **Collaboration and AI:** You may discuss ideas and use course materials,
   documentation, the internet, and AI tools. Submit your own work, and do not
   share code or solutions.
@@ -59,7 +58,7 @@ the same as in PS4.
    and extract it.
 2. In VS Code, open the extracted folder containing
    [Project.toml](Project.toml), and open a terminal there.
-3. Install the packages. This needs internet access:
+3. Install the packages. The installation needs internet access:
 
    ```text
    julia --project=. --startup-file=no -e 'using Pkg; Pkg.instantiate()'
@@ -74,8 +73,9 @@ the same as in PS4.
 
 5. Answer Question 1a, your prediction, before you write any code.
 6. Complete each function by replacing each `error("Complete ...")` with your
-   calculation. Follow the TODO hint above it, then delete the TODO. Do not
-   change the function names, arguments, docstrings, or return statements.
+   calculation. Follow the TODO hint above each `error` line, then delete the
+   TODO. Do not change the function names, arguments, docstrings, or return
+   statements.
 7. Run the checker as you work:
 
    ```text
@@ -95,7 +95,7 @@ Each docstring names the example cell to copy and the slide of the
 
 Edit only `TRACK.txt`, your track's source and response files, `Include.jl`,
 and any helper files you add. Put helper functions in `.jl` files under
-[src](src), load them from [Include.jl](Include.jl), and document each one.
+[src](src), load the files from [Include.jl](Include.jl), and document each function.
 
 ## One month of the fund
 
@@ -108,13 +108,13 @@ ticker. Each contract covers 100
 shares, so the 10 contracts cover all 1,000 shares. The calls expire in about a
 month, and each month has four steps:
 
-1. The fund's **starting wealth** is its shares plus its cash, before it sells
-   the calls.
+1. The fund's **starting wealth** is its shares plus its cash, before the fund
+   sells the calls.
 2. The premium goes into the cash, and the cash earns the risk-free rate over
    the month.
 3. At expiration, the calls are exercised if the share price is above the
    strike. The fund sells its shares to the call buyers at the strike and buys
-   the same number of new shares at the share price, so its cash falls by the
+   the same number of new shares at the share price, so the fund's cash falls by the
    difference. If the share price is at or below the strike, the calls expire
    worthless.
 4. The fund's **ending wealth** is its shares plus its cash. If the cash is
@@ -125,23 +125,30 @@ starting wealth. We compare the fund with **holding the shares**: the same
 shares and the same opening cash, with no calls sold.
 
 For example, suppose the fund holds 1,000 shares at 100 USD/share and 5,000 USD
-of cash. It sells calls with a strike of 102 USD/share for a premium of 0.87
-USD/share, so 870 USD goes into its cash. The cash grows by a factor of 1.00345
-over the month.
+of cash. The fund sells 10 call contracts with a strike of 102 USD/share for a
+premium of 0.87 USD/share on each of the 1,000 shares, so 870 USD goes into the
+fund's cash. The cash grows by a factor of 1.00345 over the month.
 
 | Share price at expiration (USD/share) | Fund's ending cash (USD) | Fund's wealth ratio | Holding's wealth ratio |
 |--:|--:|--:|--:|
 | 99.66 | 5,890.25 | 1.0052 | 0.9969 |
 | 110.00 | −2,109.75 | 1.0275 | 1.0954 |
 
-When the share price falls, the premium puts the fund ahead of holding. When
-the share price rises past the strike, the fund pays 8 USD/share to replace its
-shares, and holding comes out ahead.
+If the share price falls to 99.66 USD/share, the calls expire worthless. The
+fund keeps the 870 USD premium, so the fund's wealth ratio is above the wealth
+ratio of holding the shares.
+
+If the share price rises to 110 USD/share, the calls are exercised. The fund
+sells its 1,000 shares to the call buyers at 102 USD/share and buys 1,000 new
+shares at 110 USD/share. The fund pays 8 USD/share more than the fund receives,
+8,000 USD in all, and the fund's cash falls below zero. The fund gives up the
+gain above the strike, so the fund's wealth ratio is below the wealth ratio of
+holding the shares.
 
 **Growth rate.** PS5 measures performance by the growth rate, in 1/yr: the
 natural log of final wealth divided by initial wealth, divided by the time in
-years. The `growth_rate` function computes it by adding the logs of the monthly
-wealth ratios and dividing by the time.
+years. The `growth_rate` function computes the growth rate by adding the logs of the
+monthly wealth ratios and dividing by the time.
 
 ## The data
 
@@ -155,15 +162,16 @@ and the next trade usually starts on the day the previous trade expires. The
 [data notes](data/README.md) explain the two exceptions. PS5 uses two options
 from each trade:
 
-- `short_call` is the call the fund sells. Its delta is nearest 0.25, which
-  puts its strike a few percent above the share price.
-- `long_put` (Advanced) is the put the collar fund buys. Its delta is nearest
-  0.10 in absolute value, which puts its strike farther below the share price.
+- `short_call` is the call the fund sells. The call's delta is nearest 0.25,
+  which puts the call's strike a few percent above the share price.
+- `long_put` (Advanced) is the put the collar fund buys. The put's delta is
+  nearest 0.10 in absolute value, which puts the put's strike below the share
+  price.
 
 The quotes come from the broker Alpaca's free-plan **indicative** feed, which
 only approximates exchange quotes. The graded results use each call's **mid
 price**, halfway between the quoted bid and ask. The report also shows the fund
-selling at the bid, as a rough comparison of what trading might cost.
+selling at the bid, as an estimate of the trading cost.
 
 **Benchmarks.** Each ticker has three benchmarks, measured from its first entry
 date to its last expiration date:
@@ -182,7 +190,7 @@ date to its last expiration date:
 - There are no commissions, dividends, or taxes. The fund, holding the shares,
   and SPY all use closing prices only.
 
-## Study 1: What does the model promise?
+## Study 1: What does the model predict?
 
 For each ticker, the model uses the ticker's first trade and listed strikes:
 
@@ -194,20 +202,20 @@ For each ticker, the model uses the ticker's first trade and listed strikes:
   above that target. The [companion](docs/PS5-Mathematical-Companion.pdf)
   explains the listed strikes.
 - **Premiums** come from your `call_premium` function, every month on every
-  path. It runs twice: once at the historical volatility, and once at the
-  implied volatility, the volatility at which a pricing model matches the
-  option's market price.
+  path. The report runs `call_premium` twice: once at the historical
+  volatility, and once at the implied volatility, the volatility at which a
+  pricing model matches the option's market price.
 
 Complete these functions, which follow Tasks 2 and 3 of the covered call fund
 example:
 
 1. **`call_premium`** returns the premium of one month's call. Build one short
    American call with the course `build` function and
-   `MyAmericanCallContractModel`. Then price it with the course
+   `MyAmericanCallContractModel`. Then price the call with the course
    `binomial_premium` function on a 60-step tree.
-2. **`covered_call_month`** runs one month of the fund and returns its wealth
-   ratio and ending cash. The report passes that cash in as the next month's
-   starting cash.
+2. **`covered_call_month`** runs one month of the fund and returns the fund's
+   wealth ratio and ending cash. The report passes the ending cash in as the
+   next month's starting cash.
 3. **`growth_rate`** returns the growth rate from a list of wealth ratios and
    the time in years.
 
@@ -222,10 +230,10 @@ Question 1:
 
 ## Study 2: What happened?
 
-You write no new code for this study. Your functions now replay the trades. Each
-month, the fund sells calls at the strike and mid price in the data, and it uses
-the closing share prices at entry and expiration. The fund's cash carries over
-from one month to the next.
+You write no new code for this study. Your functions now run the fund on the
+real trades. Each month, the fund sells calls at the strike and mid price in the
+data, and the fund uses the closing share prices at entry and expiration. The fund's
+cash carries over from one month to the next.
 
 Rerun the checker, read these tables, and answer Question 2:
 
@@ -233,10 +241,11 @@ Rerun the checker, read these tables, and answer Question 2:
 |:--|:--|
 | **Growth rates and benchmarks** | The average, median, lowest, and highest growth rate over the tickers for the fund, holding the shares, SPY, and cash, and how many funds beat holding. |
 | **Each ticker** | The months the calls were exercised ("called away"), the months that ended with negative cash, the average premium, and the growth rates of the fund and holding. |
-| **Promise versus outcome** | For each ticker, the model's probability that the fund would beat holding, whether it did, and where the outcome falls among the simulated outcomes. |
+| **Simulation versus real** | For each ticker, the model's probability that the fund would beat holding, whether the fund beat holding, and where the real result falls among the simulated results. |
 
-For **Promise versus outcome**, the model uses each trade's dates, strike
-multiple, and implied volatility, and it simulates only the share prices.
+For **Simulation versus real**, the model uses each trade's dates, moneyness
+(strike divided by share price), and implied volatility, and the model simulates only
+the share prices.
 
 ## Study 3: What can we conclude?
 
@@ -256,15 +265,15 @@ premium.
 1. **`put_premium`** returns the premium of one long American put, priced on the
    binomial tree as in `call_premium`. The collar fund holds each put to
    expiration and does not exercise early.
-2. **`collar_month`** runs one month of the collar fund and returns its wealth
-   ratio and ending cash. The call's premium minus the put's premium goes into
+2. **`collar_month`** runs one month of the collar fund and returns the
+   collar fund's wealth ratio and ending cash. The call's premium minus the put's premium goes into
    the cash, and the cash grows. The calls' payoff is then paid from the cash,
-   and the puts' payoff is added to it. The fund's calls and puts each cover all
-   of its shares.
+   and the puts' payoff is added to the cash. The fund's calls and puts each
+   cover all of the fund's shares.
 
 Rerun the checker. The Study 1 tables now include the collar fund in the model.
 The **Advanced: the collar fund** table shows each ticker's collar fund and the
-months its put paid. Answer Question 3, including part c.
+months the put paid. Answer Question 3, including part c.
 
 ## Check and submit your work
 
@@ -274,6 +283,6 @@ months its put paid. Answer Question 3, including part c.
    julia --project=. --startup-file=no check_submission.jl
    ```
 
-   It flags unanswered questions and writes `MANIFEST.txt`.
+   The checker flags unanswered questions and writes `MANIFEST.txt`.
 2. ZIP the whole PS5 folder as `CHEME-5660-PS5-<your netid>.zip`.
 3. Upload the ZIP to the PS5 assignment on Canvas.

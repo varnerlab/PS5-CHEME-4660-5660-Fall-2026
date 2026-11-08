@@ -95,8 +95,8 @@ end
     check_collar_floor() -> Bool
 
 Below the put's strike the fund exercises its puts: it sells its shares at K₁ and buys new ones,
-so its cash rises by N_S·(K₁ - S_end). The ratio is floored, the same at 80 and at 50, but the
-cash differs.
+so its cash rises by N_S·(K₁ - S_end). The ratio stops falling at the put's strike, so the
+ratio is the same at 80 and at 50, but the cash differs.
 """
 function check_collar_floor()::Bool
 
@@ -156,7 +156,7 @@ function advanced_public_checks()::Vector{NamedTuple}
         (name = "Put premium: doubling the share price and strike doubles it", test = check_put_scaling),
         (name = "Put premium: one positive Float64 that rises with volatility", test = check_put_type_and_volatility),
         (name = "Collar month: net premium into the cash between the strikes", test = check_collar_between),
-        (name = "Collar month: floored at the put's strike; put payoff into the cash", test = check_collar_floor),
+        (name = "Collar month: the put pays into the cash below its strike", test = check_collar_floor),
         (name = "Collar month: capped at the call's strike; call payoff from the cash", test = check_collar_cap),
         (name = "Collar month: a net premium paid lowers the cash; Float64 values", test = check_collar_net_debit),
     ]);

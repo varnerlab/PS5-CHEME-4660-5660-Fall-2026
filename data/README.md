@@ -1,24 +1,24 @@
-# PS5 shipped data
+# PS5 supplied data
 
-PS5 reads the four files in this folder: `trades.csv`, `parameters.csv`, and `benchmark.csv`, which hold the PS4 data and one more trade on each ticker, entered in October 2026, and `strike_increments.csv`, new for PS5 (see the SHA-256 hashes at the end). Do not edit them.
+PS5 reads the four files in this folder: `trades.csv`, `parameters.csv`, and `benchmark.csv`, which hold the PS4 data and one more trade on each ticker, entered in October 2026, and `strike_increments.csv`, new for PS5 (see the SHA-256 hashes at the end). Do not edit these files.
 
 ## How PS5 uses the data
 
-- **The roll.** Each ticker's seven trades, in order of entry, are the fund's seven months. On each trade the fund sells the `short_call` leg: its strike is `short_call_K`, and graded results sell it at `short_call_mid` (the report's comparison sells at `short_call_bid`). The Advanced collar fund also buys the `long_put` leg at `long_put_mid`. A month uses the closes `S0` (entry) and `ST` (expiration), and the fund's cash, including the premium, grows at the risk-free rate for `days` calendar days. The cash carries from one trade to the next.
+- **The roll.** Each ticker's seven trades, in order of entry, are the fund's seven months. On each trade the fund sells the `short_call` leg: the leg's strike is `short_call_K`, and graded results sell the leg at `short_call_mid` (the report's comparison sells at `short_call_bid`). The Advanced collar fund also buys the `long_put` leg at `long_put_mid`. A month uses the closes `S0` (entry) and `ST` (expiration), and the fund's cash, including the premium, grows at the risk-free rate for `days` calendar days. The cash carries from one trade to the next.
 - **Gaps.** When a trade enters after the previous one's expiration (BMY on 2026-09-08 after 2026-09-04, and PFE on 2026-05-18 after 2026-05-15), the fund holds its shares and its cash in between: the shares move from one close to the next, and the cash grows at the risk-free rate for the days between. Holding the shares does the same.
 - **Length of the roll.** A ticker's growth rates use the calendar days from its first entry to its last expiration, divided by 365.
-- **The model.** Study 1 uses each ticker's first trade only: `S0`, the strike multiples `short_call_K / S0` and `long_put_K / S0`, the implied volatilities `short_call_iv` and `long_put_iv`, and the trailing drift `μ` and volatility `σ̂` from `parameters.csv`. These are what the fund knew on its first entry date. Each simulated strike is put on the ticker's grid of listed strikes, `strike_increment` apart (`strike_increments.csv`): the smallest listed strike at or above the call's target, and the largest at or below the put's.
+- **The model.** Study 1 uses each ticker's first trade only: `S0`, the moneyness values `short_call_K / S0` and `long_put_K / S0`, the implied volatilities `short_call_iv` and `long_put_iv`, and the trailing drift `μ` and volatility `σ̂` from `parameters.csv`. These values are what the fund knew on its first entry date. Each simulated strike is put on the ticker's grid of listed strikes, `strike_increment` apart (`strike_increments.csv`): the smallest listed strike at or above the call's target, and the largest at or below the put's.
 - **Benchmark.** SPY's growth rate for a ticker uses SPY's closes on that ticker's first entry date and last expiration date.
 
 The rest of this file is the PS4 data notes, updated for the added trades.
 
-## Provenance
+## Sources
 
-- Options: the course options archive, release `data-options-eod-2026-11-06`. It holds Alpaca end-of-day option quotes, and each underlying's daily close, for the sessions 2026-04-13 to 2026-11-06.
+- Options: the course options archive, release `data-options-eod-2026-11-06`. The archive holds Alpaca end-of-day option quotes, and each underlying's daily close, for the sessions 2026-04-13 to 2026-11-06.
 - Historical drift and volatility (`parameters.csv`): from the last 253 daily closes before each entry date, which give 252 daily changes, taken from the course daily price datasets. Those datasets end 2026-09-04, so a trade entered after 2026-09-04 uses the options archive's closes of the underlying for the days after 2026-09-04.
 - The quotes come from Alpaca's free-plan indicative feed, not the official consolidated exchange quotes (OPRA). Graded results use mid prices, the midpoint of bid and ask. The bid and ask are used to choose and screen legs, and the report's comparison sells each call at the bid.
 - The risk-free rate in `config/defaults.toml` is 0.0376, the mean investment rate (bond-equivalent yield) of 13-week Treasury bills over 20 auctions, from 2026-04-13 to 2026-08-24, the last auction in the course Treasury bill data.
-- IWM and META are in the archive but excluded, because the course price datasets, which supply the historical drift and volatility, do not contain them.
+- IWM and META are in the archive but excluded, because the course price datasets, which supply the historical drift and volatility, do not contain those two tickers.
 - Benchmark: the daily closes of SPY, the `benchmark_ticker` in `config/defaults.toml`, from the same options archive.
 
 ## How the trades were chosen
@@ -31,7 +31,7 @@ The rest of this file is the PS4 data notes, updated for the added trades.
 
 ## Quote screen
 
-Indicative quotes are sometimes implausibly wide, so each chosen leg is screened. A leg fails when its bid-ask spread is both more than 3.0 times the median spread of its neighbors and wider than 0.25 USD per share. Its neighbors are the two nearest strikes of the same type on each side, or fewer at the edge of the chain. A failed leg is replaced by the candidate whose delta is closest to the leg's target among those that pass the screen, have a narrower spread than the failed leg, and, for a wing, still meet the wing rules above; if there is none, the leg is kept. The ATM call and put move together, to the next-nearest strike where both pass and the wider of their two spreads is narrower than before.
+Indicative quotes are sometimes implausibly wide, so each chosen leg is screened. A leg fails when its bid-ask spread is both more than 3.0 times the median spread of its neighbors and wider than 0.25 USD per share. A leg's neighbors are the two nearest strikes of the same type on each side, or fewer at the edge of the chain. A failed leg is replaced by the candidate whose delta is closest to the leg's target among those that pass the screen, have a narrower spread than the failed leg, and, for a wing, still meet the wing rules above; if there is none, the leg is kept. The ATM call and put move together, to the next-nearest strike where both pass and the wider of their two spreads is narrower than before.
 
 ## Counts
 
@@ -40,7 +40,7 @@ Indicative quotes are sometimes implausibly wide, so each chosen leg is screened
 - BMY, entry 2026-09-04 (expiration 2026-10-02): skipped because every candidate protective put was priced at or above the short put it would protect, whose mid was 0.765 USD/share.
 - PFE, entry 2026-05-15 (expiration 2026-06-12): skipped because no protective put strike with a quote and a delta lies beyond the short put strike of 24.0 USD/share.
 - Entries whose expiration would fall after 2026-11-06 end the roll, as described above, and are not counted as skips.
-- Legs moved by the quote screen: 15, on 10 trades (the `screened` column counts them for each trade).
+- Legs moved by the quote screen: 15, on 10 trades (the `screened` column counts the moved legs for each trade).
 
 ## `trades.csv` (one row per trade)
 

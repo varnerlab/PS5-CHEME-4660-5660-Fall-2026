@@ -8,7 +8,7 @@ letter. Cite numbers from `results/Report.md`, and give growth rates in 1/yr.
 Put your answer between each question's `<!-- answer-N:start -->` and
 `<!-- answer-N:end -->` markers, in place of the TODO.
 
-## 1. What does the model promise?
+## 1. What does the model predict?
 
 **a. What do you predict?** Answer before you write any code; accuracy is not
 graded. On how many of the 29 tickers will the fund grow faster than holding
@@ -33,17 +33,19 @@ TODO: Answer parts a, b, and c.
 
 ## 2. What happened?
 
-**a. Why did the fund win on some tickers and lose on others?** On how many
-tickers did the fund beat holding the shares, and how many did the model expect?
-Using **Each ticker**, what separates the tickers where the fund won from those
-where it lost? Cite the growth rates of holding and the months called away.
+**a. Why did the fund beat holding the shares on some tickers but not on
+others?** On how many tickers did the fund beat holding the shares, and how many
+did the model expect? Using **Each ticker**, what separates the tickers where
+the fund beat holding the shares from the tickers where the fund did not? Cite
+the growth rates of holding and the months called away.
 
 **b. Which outcomes did the model not expect?** Name the two tickers whose outcomes
-were rarest under the model (percentile nearest 0% or 100%). What did their
-shares do that the model did not expect? What does that say about the drift and
-volatility the model took from the year before? The model prices each simulated
-call at its implied volatility, not at the market's mid price. Could this
-difference also explain those outcomes?
+were rarest under the model (percentile nearest 0% or 100%). What did the
+shares of those two tickers do that the model did not expect? What do those
+share prices say about the drift and volatility the model took from the year
+before? The model prices each simulated call at the call's implied volatility,
+not at the market's mid price. Could the difference between the model's premium
+and the market's mid price also explain those outcomes?
 
 <!-- answer-2:start -->
 TODO: Answer parts a and b.
@@ -53,8 +55,8 @@ TODO: Answer parts a and b.
 
 **a. Did the fund beat holding the shares?** In **Growth rates and benchmarks**,
 compare the fund with holding the shares, SPY, and cash: the average, median,
-lowest, and highest growth rate. What did the fund give up, and what did it get?
-How much did selling at the bid cost? Did your prediction hold?
+lowest, and highest growth rate. What did the fund give up, and what did the fund get?
+How much did selling at the bid cost? Was your prediction right?
 
 **b. Why are seven months weak evidence?** All 29 funds ran over the same
 seven months. Using the SPY row, describe the market over these dates. Give two
@@ -63,7 +65,7 @@ periods would be.
 
 **c. Were the puts worth what they cost?** In **Advanced: the collar fund**, how many
 months did a put pay, and what did the puts cost on average? Compare the collar
-fund's growth rates with those of the covered call fund, holding the shares, and
+fund's growth rates with the growth rates of the covered call fund, holding the shares, and
 the model's collar fund. What kind of seven-month period would favor the collar?
 
 <!-- answer-3:start -->

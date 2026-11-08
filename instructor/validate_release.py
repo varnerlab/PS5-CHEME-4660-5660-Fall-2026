@@ -80,7 +80,7 @@ def check_starter_run(student, track, total):
     for number in (1, 2, 3):
         require(f"Question {number} still contains TODO" in output,
                 f"{track} starter did not warn about question {number}")
-    require("differs from the shipped copy" not in output, f"{track} starter flagged defaults.toml as edited")
+    require("differs from the supplied copy" not in output, f"{track} starter flagged defaults.toml as edited")
 
     # The submission record and the report must exist and agree with the run.
     manifest = (student / "MANIFEST.txt").read_text()

@@ -325,9 +325,9 @@ end
 
 # --- 3. Study 1: the model ----------------------------------------------------------------------
 
-# The wealth ratio of a simulated fund that is wiped out, a 99.9% loss. A fund whose wealth reaches
-# zero or below has no growth rate, because the log of zero or a negative number is undefined.
-const _WIPED_OUT_RATIO = 0.001;
+# The wealth ratio of a simulated fund whose wealth reaches zero or below: a 99.9% loss. That fund
+# has no growth rate of its own, because the log of zero or a negative number is undefined.
+const _ZERO_WEALTH_RATIO = 0.001;
 
 """
     _opening_cash(config, S::Float64) -> Float64
@@ -374,7 +374,7 @@ function _model_fund_rates(calls::StudentCalls, ticker::String, S::Matrix{Float6
     # main loop: one simulated path at a time -
     for p in 1:number_of_paths
         C = _opening_cash(config, S[1, p]); # cash at the start of the first month (USD)
-        wiped_out = false; # true once the fund owes more than its shares are worth
+        wealth_reached_zero = false; # true once the fund owes more than its shares are worth
 
         # one month at a time -
         for j in 1:number_of_months
@@ -386,7 +386,7 @@ function _model_fund_rates(calls::StudentCalls, ticker::String, S::Matrix{Float6
             # The fund's wealth at the end of this month, from the same inputs. At or below zero, the path stops -
             end_cash = 𝒟 * (C + N_S * 𝒫) - N_S * max(S[j+1, p] - K, 0.0);
             if N_S * S[j+1, p] + end_cash <= 0.0
-                wiped_out = true;
+                wealth_reached_zero = true;
                 borrowed[p] = true;
                 break;
             end
@@ -400,9 +400,9 @@ function _model_fund_rates(calls::StudentCalls, ticker::String, S::Matrix{Float6
             end
         end
 
-        # A wiped-out path counts as a 99.9% loss; any other path uses its monthly wealth ratios -
-        if wiped_out
-            rates[p] = _run_growth_rate(calls, ticker, [_WIPED_OUT_RATIO], T);
+        # A path whose wealth reached zero counts as a 99.9% loss; any other path uses its monthly wealth ratios -
+        if wealth_reached_zero
+            rates[p] = _run_growth_rate(calls, ticker, [_ZERO_WEALTH_RATIO], T);
         else
             rates[p] = _run_growth_rate(calls, ticker, copy(ratios), T);
         end
@@ -506,7 +506,7 @@ end
     _matched_rates(calls, roll, prices, config) -> NamedTuple
 
 Run the fund and the holding benchmark on every simulated path of the real roll, for the
-comparison of the model's promise with what happened. Each trade keeps its real target (its real
+comparison of the model's prediction with what happened. Each trade keeps its real target (its real
 strike over the share price at entry), its real length, and its implied volatility. Each trade's
 strike is the smallest listed strike at or above the target times the simulated price, and the
 student's `call_premium` prices the call. Between trades the fund holds its shares and cash.
@@ -583,11 +583,11 @@ end
 Study 1. For each ticker, simulate monthly share prices with geometric Brownian motion, using the
 trailing drift and volatility on the ticker's first entry date, and run a fund that holds `N_S`
 shares and a cash account and sells calls every month. Each month's strike is the smallest listed
-strike at or above the first trade's strike multiple times the share price, on the ticker's grid of
+strike at or above the first trade's moneyness times the share price, on the ticker's grid of
 listed strikes. A month lasts the first trade's time to expiration. The student's `call_premium`
 prices the calls every month on every path, once at the trailing (historical) volatility and once
 at the call's implied volatility. The Advanced collar fund also buys the largest listed put at or
-below the put's strike multiple, priced with `put_premium` at the put's implied volatility. The
+below the put's moneyness times the share price, priced with `put_premium` at the put's implied volatility. The
 holding benchmark holds the same shares and opening cash and sells no calls.
 
 ### Arguments
@@ -608,10 +608,10 @@ holding benchmark holds the same shares and opening cash and sells no calls.
   fund_hist_borrows`, the same four for `fund_iv` (`beats`: probability that the fund grows faster
   than the holding benchmark; `borrows`: probability that the fund's cash ends a month negative),
   `fund_iv_sd`, and `matched_beats`, the probability that the fund beats the holding benchmark when
-  the simulation follows the real roll (each trade's real strike multiple, length, and implied
+  the simulation follows the real roll (each trade's real moneyness, length, and implied
   volatility, and the gaps between trades). The Advanced track adds `put_moneyness, put_iv,
   put_premium_iv, collar_mean, collar_loss, collar_beats, collar_borrows, collar_sd`.
-- `strikes` has one row per ticker and target strike multiple in the config's `moneyness_grid`,
+- `strikes` has one row per ticker and target moneyness in the config's `moneyness_grid`,
   priced at the call's implied volatility: `ticker, moneyness, difference_mean` (mean of the fund
   minus holding growth rate), `beats`, `fund_loss`, `borrows`.
 - `differences` maps each ticker to the simulated fund-minus-holding growth rates on the real roll,
@@ -646,7 +646,7 @@ function evaluate_model(track::String, rolls::Vector{NamedTuple}, config::NamedT
         fund_iv = _attempt(() -> _model_fund_rates(calls, ticker, S, plan.call_moneyness, plan.call_iv,
             Δt, increment, config));
 
-        # Promise versus outcome: the real roll's strike multiples, lengths, and dates, with simulated share prices -
+        # Simulation versus real: the real roll's moneyness values, lengths, and dates, with simulated share prices -
         matched = _attempt(() -> _matched_rates(calls, roll, roll_prices(roll, config, index), config));
         differences[ticker] = matched === missing ? missing : matched.fund .- matched.holding;
 
@@ -833,7 +833,7 @@ end
 """
     evaluate_history(track, rolls, closes, config, calls) -> DataFrame
 
-Study 2. Replay each ticker's real monthly roll with a fund that holds `N_S` shares and a cash
+Study 2. Run each ticker's real monthly roll with a fund that holds `N_S` shares and a cash
 account. On every trade the fund sells the calls at their mid price (and, for comparison, at their
 bid), the premium goes into the cash, which earns the risk-free rate, and the calls settle at the
 close on the expiration date. Between an expiration and a later entry the fund holds its shares and
@@ -854,7 +854,7 @@ One row per ticker: `ticker, group, first_entry, last_expiration, T` (years), `m
 (months that end with the fund's cash negative), `premium_market` (average call mid price over the
 share price at entry), `fund_g`, `fund_bid_g`, `holding_g`, `benchmark_g` (the market benchmark over
 the same dates), `cash_g` (the risk-free rate), and `fund_beat` (`fund_g > holding_g`). The Advanced
-track adds `collar_g`, `months_floored` (closes below the put's strike), `put_cost` (average put mid
+track adds `collar_g`, `months_put_paid` (closes below the put's strike), `put_cost` (average put mid
 over the share price), and `collar_beat`. Growth rates are in 1/yr, and are `missing` when a student
 function failed.
 """
@@ -894,7 +894,7 @@ function evaluate_history(track::String, rolls::Vector{NamedTuple}, closes::Abst
         if track == "advanced"
             collar = _attempt(() -> _history_ratios(:collar, calls, roll, config));
             collar_g = _history_rate(calls, roll, collar);
-            row = merge(row, (collar_g = collar_g, months_floored = count(m.S_end < m.K_put for m in months),
+            row = merge(row, (collar_g = collar_g, months_put_paid = count(m.S_end < m.K_put for m in months),
                 put_cost = mean(m.put_mid / m.S_start for m in months), collar_beat = collar_g > holding_g));
         end
         push!(rows, row);
@@ -907,7 +907,7 @@ end
 """
     summary_table(track, history, benchmark_ticker) -> DataFrame
 
-The headline of Study 2: one row per strategy, with the average, median, lowest, and highest growth
+The summary of Study 2: one row per strategy, with the average, median, lowest, and highest growth
 rate over the tickers (1/yr). A fund's row also gives the number of tickers where the fund grew
 faster than the holding benchmark (`beat_holding`). The rows are the covered call fund at mid
 prices and at the bid, the collar fund (Advanced), and the benchmarks: holding the shares and cash,
@@ -998,14 +998,14 @@ end
 """
     strike_summary(strikes) -> DataFrame
 
-The strike-choice table averaged over the tickers: one row per target strike multiple, with the
+The strike-choice table averaged over the tickers: one row per target moneyness, with the
 average mean of the fund-minus-holding growth rate, and the average probabilities that the fund
 beats the holding benchmark, that the fund loses money, and that the fund's cash ends a month
 negative.
 """
 function strike_summary(strikes::DataFrame)::DataFrame
 
-    # main loop: one target strike multiple at a time, in increasing order -
+    # main loop: one target moneyness at a time, in increasing order -
     rows = NamedTuple[];
     for m in sort(unique(strikes.moneyness))
         tickers = strikes[strikes.moneyness .== m, :];
@@ -1017,15 +1017,15 @@ function strike_summary(strikes::DataFrame)::DataFrame
 end
 
 """
-    promise_table(model, history, differences) -> DataFrame
+    simulation_versus_real_table(model, history, differences) -> DataFrame
 
-Promise versus outcome, one row per ticker: the model's probability that the fund beats the holding
-benchmark on the real roll's strike multiples, implied volatilities, and dates (`model_beats`),
+Simulation versus real, one row per ticker: the model's probability that the fund beats the holding
+benchmark on the real roll's moneyness values, implied volatilities, and dates (`model_beats`),
 whether the fund did (`fund_beat`), the real fund-minus-holding growth rate (`difference`), and
 where that difference falls among the simulated differences (`percentile`, the fraction of
 simulated differences at or below the real difference).
 """
-function promise_table(model::DataFrame, history::DataFrame, differences::AbstractDict)::DataFrame
+function simulation_versus_real_table(model::DataFrame, history::DataFrame, differences::AbstractDict)::DataFrame
 
     # main loop: the model's row and the history's row of each ticker -
     rows = NamedTuple[];
@@ -1088,11 +1088,11 @@ Format a growth rate (1/yr) with its sign and three decimals. A missing value sh
 _g(x)::String = ismissing(x) ? "UNAVAILABLE" : @sprintf("%+.3f", _shown(x, 3));
 
 """
-    _multiple(x) -> String
+    _moneyness(x) -> String
 
-Format a strike multiple with three decimals. A missing value shows as `UNAVAILABLE`.
+Format a moneyness value with three decimals. A missing value shows as `UNAVAILABLE`.
 """
-_multiple(x)::String = ismissing(x) ? "UNAVAILABLE" : @sprintf("%.3f", x);
+_moneyness(x)::String = ismissing(x) ? "UNAVAILABLE" : @sprintf("%.3f", x);
 
 """
     _vol(x) -> String
@@ -1153,14 +1153,14 @@ const _MODEL_SUMMARY_COLUMNS = [
     ("Avg P(cash goes negative)", :borrows, _rate_or_text)];
 const _PREMIUM_COLUMNS = [
     ("Ticker", :ticker, _text),
-    ("Call strike / share price", :call_moneyness, _multiple),
+    ("Call strike / share price", :call_moneyness, _moneyness),
     ("Historical vol", :σ̂, _vol),
     ("Call implied vol", :call_iv, _vol),
     ("Model premium at historical vol", :premium_hist, _premium),
     ("Model premium at implied vol", :premium_iv, _premium),
     ("Market premium (mid)", :premium_market, _premium)];
 const _STRIKE_COLUMNS = [
-    ("Target strike / share price", :moneyness, _multiple),
+    ("Target strike / share price", :moneyness, _moneyness),
     ("Avg mean of fund minus holding growth rate (1/yr)", :difference_mean, _g),
     ("Avg P(fund beats holding)", :beats, _rate),
     ("Avg P(fund growth rate < 0)", :fund_loss, _rate),
@@ -1174,7 +1174,7 @@ const _HISTORY_COLUMNS = [
     ("Fund growth rate", :fund_g, _g),
     ("Holding growth rate", :holding_g, _g),
     ("Fund beat holding", :fund_beat, _yesno)];
-const _PROMISE_COLUMNS = [
+const _SIMULATION_VERSUS_REAL_COLUMNS = [
     ("Ticker", :ticker, _text),
     ("Model P(fund beats holding)", :model_beats, _rate),
     ("Fund beat holding", :fund_beat, _yesno),
@@ -1182,7 +1182,7 @@ const _PROMISE_COLUMNS = [
     ("Model percentile of what happened", :percentile, _rate)];
 const _COLLAR_COLUMNS = [
     ("Ticker", :ticker, _text),
-    ("Months floored by the put", :months_floored, _text),
+    ("Months the put paid", :months_put_paid, _text),
     ("Months called away", :months_called, _text),
     ("Avg put cost (% of share price)", :put_cost, _premium),
     ("Collar fund growth rate", :collar_g, _g),
@@ -1303,23 +1303,23 @@ function _premium_average_row(model::DataFrame)::DataFrame
 end
 
 """
-    _promise_sentence(promise) -> String
+    _simulation_versus_real_sentence(table) -> String
 
 Return the sentence that compares the expected number of tickers where the fund beats holding with
 the number where the fund did.
 """
-function _promise_sentence(promise::DataFrame)::String
+function _simulation_versus_real_sentence(table::DataFrame)::String
 
     # The counts need every ticker's result -
-    if any(ismissing, promise.model_beats) || any(ismissing, promise.fund_beat)
+    if any(ismissing, table.model_beats) || any(ismissing, table.fund_beat)
         return "The expected and actual counts are UNAVAILABLE until every function works.";
     end
 
     # The expected count is the sum of the model's probabilities -
-    expected = sum(Float64.(promise.model_beats));
-    actual = count(Bool.(promise.fund_beat));
-    return @sprintf("The model expected the fund to beat holding the shares on %.1f of the %d tickers (the sum of the probabilities); it did on %d.",
-        expected, nrow(promise), actual);
+    expected = sum(Float64.(table.model_beats));
+    actual = count(Bool.(table.fund_beat));
+    return @sprintf("The model expected the fund to beat holding the shares on %.1f of the %d tickers (the sum of the probabilities); the fund beat holding the shares on %d.",
+        expected, nrow(table), actual);
 end
 
 """
@@ -1349,7 +1349,7 @@ function _run_description(track::AbstractString, rolls::Vector{NamedTuple}, conf
     text = "$(titlecase(track)) track. $(length(rolls)) tickers, $(trades) trades in all, " *
         "from $(first_date) to $(last_date). Each ticker's fund holds $(config.N_S) shares and a cash account, " *
         "and every month sells $(config.number_of_contracts) call contracts of $(config.shares_per_contract) shares; " *
-        "it opens with cash equal to $(opening_cash_percent)% of the value of its shares " *
+        "the fund opens with cash equal to $(opening_cash_percent)% of the value of the fund's shares " *
         "and borrows at the risk-free rate when the cash runs out.";
 
     # The second paragraph lists the settings -
@@ -1370,7 +1370,7 @@ function _write_report_opening(io::IO, title::AbstractString, description::Named
     println(io, description.text, "\n");
     println(io, description.settings, "\n");
     if !isempty(issues)
-        println(io, "Some calculations could not run. They show UNAVAILABLE; ",
+        println(io, "Some calculations could not run. Those calculations show UNAVAILABLE; ",
             "the last section says why.\n");
     end
     return nothing;
@@ -1385,11 +1385,11 @@ holding the shares in the model, and the strike choice.
 function _write_study_one(io::IO, track::AbstractString, t::NamedTuple)::Nothing
 
     # What the model does -
-    println(io, "## Study 1: What does the model promise?\n");
+    println(io, "## Study 1: What does the model predict?\n");
     println(io, "For each ticker, the model simulates seven months of share prices with geometric Brownian motion, ",
         "using the drift and volatility from the year before the first entry date. A simulated month lasts as long as ",
         "the first trade. Each month, the fund sells calls at the smallest listed strike at or above the first trade's ",
-        "strike multiple times the share price, and the model prices the calls on the binomial tree. Each ticker has one ",
+        "moneyness (strike divided by share price) times the share price, and the model prices the calls on the binomial tree. Each ticker has one ",
         "strike spacing, an approximation of the real listed strikes. ",
         "The premiums go into the fund's cash, which earns the risk-free rate; when a call is exercised, the fund buys ",
         "new shares from its cash, borrowing at the risk-free rate when the cash runs out. Holding: the same shares and ",
@@ -1397,7 +1397,7 @@ function _write_study_one(io::IO, track::AbstractString, t::NamedTuple)::Nothing
 
     # The first trade's premiums, in the model and in the market -
     println(io, "### Premiums: model and market\n");
-    println(io, "Each premium is a percentage of the share price, for the first trade of each ticker and its time ",
+    println(io, "Each premium is a percentage of the share price, for the first trade of each ticker and that trade's time ",
         "to expiration. The model prices the call on the binomial tree at the historical volatility or at the call's ",
         "implied volatility; the market premium is the call's mid price.\n");
     _markdown_table(io, _display(vcat(t.model, _premium_average_row(t.model); cols = :union), _PREMIUM_COLUMNS));
@@ -1405,23 +1405,23 @@ function _write_study_one(io::IO, track::AbstractString, t::NamedTuple)::Nothing
     # The strategies in the model; the Advanced track also explains the collar fund's premium -
     println(io, "### The fund and holding the shares in the model\n");
     println(io, "Each value is averaged over the tickers. For each ticker the model gives a mean growth rate and the ",
-        "probabilities over its simulated paths.\n");
+        "probabilities over the ticker's simulated paths.\n");
     _markdown_table(io, _display(t.model_summary, _MODEL_SUMMARY_COLUMNS));
     collar_note = "";
     if track == "advanced"
-        collar_note = "Collar fund: its premium is the call's premium minus the put's. ";
+        collar_note = "Collar fund: the premium is the call's premium minus the put's premium. ";
     end
     println(io, "Fund: the covered call fund, with its calls priced at the historical volatility or at the call's ",
         "implied volatility. ", collar_note,
-        "P(beats holding): the probability that the fund's growth rate is above that of holding on the same path. ",
-        "P(cash goes negative): the probability that the fund's cash ends at least one month negative, so it borrowed.\n");
+        "P(beats holding): the probability that the fund's growth rate is above the growth rate of holding on the same path. ",
+        "P(cash goes negative): the probability that the fund's cash ends at least one month negative, so the fund borrowed.\n");
 
     # The strike choice -
     println(io, "### Strike choice in the model\n");
     println(io, "The same simulated paths, with the fund selling calls at other target strikes (each month, the smallest ",
         "listed strike at or above the target times the share price), all priced at each ticker's call implied volatility ",
-        "(the model ignores how implied volatility changes with the strike). If the fund owes more than its shares are ",
-        "worth on a simulated path, the fund is wiped out: the path stops and counts as a 99.9% loss of the fund's wealth.\n");
+        "(the model ignores how implied volatility changes with the strike). If the fund's wealth reaches zero or below ",
+        "on a simulated path, the path stops and counts as a 99.9% loss of the fund's wealth.\n");
     _markdown_table(io, _display(t.strike_summary, _STRIKE_COLUMNS));
     return nothing;
 end
@@ -1430,37 +1430,37 @@ end
     _write_study_two(io, t) -> Nothing
 
 Write the Study 2 section of the report from the report's tables `t`: the growth rates and
-benchmarks, each ticker, and the promise versus the outcome.
+benchmarks, each ticker, and the simulation versus real comparison.
 """
 function _write_study_two(io::IO, t::NamedTuple)::Nothing
 
-    # What the replay does -
+    # How the fund runs on the real trades -
     println(io, "## Study 2: What happened?\n");
-    println(io, "Each ticker's fund replays its real monthly calls: it sells the calls at their mid price, the premium ",
-        "goes into its cash at the risk-free rate, and the calls settle at the close on the expiration date, with no early ",
+    println(io, "Each ticker's fund runs on the ticker's real monthly calls: the fund sells the calls at their mid price, the premium ",
+        "goes into the fund's cash at the risk-free rate, and the calls settle at the close on the expiration date, with no early ",
         "exercise. Between an expiration and a later entry, the fund holds its shares and cash. Holding: the same shares ",
-        "and opening cash, with no calls. Growth rates are over each ticker's own dates, about seven months, in 1/yr. They ",
+        "and opening cash, with no calls. Growth rates are over each ticker's own dates, about seven months, in 1/yr. The growth rates ",
         "use closing prices only: the fund, holding, and SPY all omit dividends.\n");
 
     # The growth rates of every strategy and benchmark -
     println(io, "### Growth rates and benchmarks\n");
     _markdown_table(io, _display(t.summary, _SUMMARY_COLUMNS));
-    println(io, "Calls sold at the bid: the same fund, receiving the bid instead of the mid; the gap is a rough cost ",
-        "of trading if the quoted spreads were real. The benchmarks are over each ticker's own dates.\n");
+    println(io, "Calls sold at the bid: the same fund, receiving the bid instead of the mid; the gap is an estimate of the trading cost ",
+        "if the quoted spreads were real. The benchmarks are over each ticker's own dates.\n");
 
     # One row per ticker -
     println(io, "### Each ticker\n");
     _markdown_table(io, _display(t.history, _HISTORY_COLUMNS));
 
-    # The model's promise against what happened -
-    println(io, "### Promise versus outcome\n");
+    # The model's prediction against what happened -
+    println(io, "### Simulation versus real\n");
     println(io, "Here the model follows each ticker's real roll: every trade keeps its real strike as a multiple of the ",
         "share price at entry, its real length, its call's implied volatility, and the days between trades. The share ",
         "prices are simulated, with the drift and volatility from the year before the first entry date; each simulated ",
-        "call has the smallest listed strike at or above that multiple of the simulated price, and its premium is the ",
+        "call has the smallest listed strike at or above that multiple of the simulated price, and the call's premium is the ",
         "binomial tree's at the call's implied volatility, not the market's mid price.\n");
-    println(io, _promise_sentence(t.promise), "\n");
-    _markdown_table(io, _display(t.promise, _PROMISE_COLUMNS));
+    println(io, _simulation_versus_real_sentence(t.simulation_versus_real), "\n");
+    _markdown_table(io, _display(t.simulation_versus_real, _SIMULATION_VERSUS_REAL_COLUMNS));
     println(io, "Model percentile of what happened: the share of the model's simulated fund-minus-holding growth rates ",
         "at or below the real one. Near 0% or 100% means what happened was rare under the model.\n");
     return nothing;
@@ -1474,7 +1474,7 @@ Write the Advanced section of the report from the report's tables `t`.
 function _write_collar_section(io::IO, t::NamedTuple)::Nothing
     println(io, "## Advanced: the collar fund\n");
     println(io, "The collar fund also buys one-month puts each month (the trade's protective put, near 0.10 delta), ",
-        "paid for in part by the calls, with the same cash account. Months floored: closes below the put's strike.\n");
+        "paid for in part by the calls, with the same cash account. Months the put paid: closes below the put's strike.\n");
     _markdown_table(io, _display(t.history, _COLLAR_COLUMNS));
     return nothing;
 end
@@ -1524,7 +1524,7 @@ end
 """
     _print_terminal_report(title, description, result, report_path) -> Nothing
 
-Print the headline tables, any calculations that could not run, and the location of the full report.
+Print the main tables, any calculations that could not run, and the location of the full report.
 """
 function _print_terminal_report(title::AbstractString, description::NamedTuple, result::NamedTuple,
     report_path::AbstractString)::Nothing
@@ -1544,7 +1544,7 @@ function _print_terminal_report(title::AbstractString, description::NamedTuple, 
     shown = _display(t.summary, _TERMINAL_SUMMARY_COLUMNS);
     print_terminal_table(shown.headers, shown.rows; right_columns = shown.right);
     println();
-    print_terminal_text(_promise_sentence(t.promise));
+    print_terminal_text(_simulation_versus_real_sentence(t.simulation_versus_real));
 
     # The calculations that could not run -
     if !isempty(result.issues)
@@ -1556,8 +1556,8 @@ function _print_terminal_report(title::AbstractString, description::NamedTuple, 
 
     # Where to read the full report -
     println();
-    print_terminal_text("Full report, with the premiums, the strike choice, each ticker, and the promise " *
-        "versus the outcome: $(report_path)");
+    print_terminal_text("Full report, with the premiums, the strike choice, each ticker, and the simulation " *
+        "versus real comparison: $(report_path)");
     return nothing;
 end
 
@@ -1593,7 +1593,7 @@ end
     print_fund_report(track, root; output_directory, config_path, title, report_name, lookup) -> NamedTuple
 
 Run the selected student functions on the model (Study 1) and on the real rolls (Study 2), print the
-headline tables, and write the report and the CSV tables. Unfinished student functions show
+main tables, and write the report and the CSV tables. Unfinished student functions show
 `UNAVAILABLE` rather than stopping the report.
 
 ### Arguments
@@ -1610,7 +1610,7 @@ headline tables, and write the report and the CSV tables. Unfinished student fun
 
 - `(tables, issues, report, seconds)`: the report's tables, the calculations that could not run, the
   path to the report, and the time the run took. The folder also receives `model.csv`, `strikes.csv`,
-  `history.csv`, `summary.csv`, and `promise.csv`.
+  `history.csv`, `summary.csv`, and `simulation_versus_real.csv`.
 """
 function print_fund_report(track::AbstractString, root::AbstractString;
     output_directory::AbstractString = "results", config_path::AbstractString = "config/defaults.toml",
@@ -1634,17 +1634,17 @@ function print_fund_report(track::AbstractString, root::AbstractString;
     tables = (model = model.tickers, model_summary = model_summary(track, model.tickers),
         strikes = model.strikes, strike_summary = strike_summary(model.strikes), history = history,
         summary = summary_table(track, history, config.benchmark_ticker),
-        promise = promise_table(model.tickers, history, model.differences));
+        simulation_versus_real = simulation_versus_real_table(model.tickers, history, model.differences));
     result = (tables = tables, issues = _call_issues(calls));
 
     # Write the CSV tables -
     mkpath(output_directory);
     for (name, table) in (("model", tables.model), ("strikes", tables.strikes), ("history", tables.history),
-            ("summary", tables.summary), ("promise", tables.promise))
+            ("summary", tables.summary), ("simulation_versus_real", tables.simulation_versus_real))
         write_table_csv(joinpath(output_directory, name * ".csv"), table);
     end
 
-    # Write the Markdown report, and print the headlines -
+    # Write the Markdown report, and print the main tables -
     description = _run_description(track, rolls, config, config_path);
     report_path = joinpath(output_directory, report_name);
     write(report_path, _report_markdown(title, track, description, result));

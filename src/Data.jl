@@ -113,7 +113,7 @@ end
     _grid_position(price::Float64, increment::Float64) -> Float64
 
 Return the position of a price on a strike grid, in units of `increment`. A price within rounding
-error of a grid line snaps to that grid line, so that an exact multiple of the increment is not
+error of a grid line is rounded to that grid line, so that an exact multiple of the increment is not
 pushed to the next strike.
 """
 function _grid_position(price::Float64, increment::Float64)::Float64
@@ -122,7 +122,7 @@ function _grid_position(price::Float64, increment::Float64)::Float64
     q = price / increment;
     r = round(q);
 
-    # Snap to the grid line when the difference is only rounding error -
+    # Round to the grid line when the difference is only rounding error -
     return abs(q - r) <= 1e-9 * max(1.0, abs(q)) ? r : q;
 end
 

@@ -124,13 +124,13 @@ end
 """
     config_hash(path::AbstractString) -> String
 
-Fingerprint a settings file, so a run records exactly which settings it used.
+Compute the SHA-256 hash of a settings file, so a run records exactly which settings it used.
 
 ### Returns
 
-- The SHA-256 digest of the file as a 64-character hex string. Windows line
+- The SHA-256 hash of the file as a 64-character hex string. Windows line
   endings are changed to `\\n` first, so a copy saved on Windows has the same
-  fingerprint.
+  hash.
 """
 function config_hash(path::AbstractString)::String
 

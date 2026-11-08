@@ -60,7 +60,7 @@ end
     roll_prices(roll::NamedTuple, config::NamedTuple, index::Int) -> NamedTuple
 
 Simulate the share price on the real roll's own dates, for the comparison of the
-model's promise with what happened. Each trade lasts its real `days`, and the days
+model's prediction with what happened. Each trade lasts its real `days`, and the days
 between an expiration and a later entry are simulated too, so the simulated roll
 spans the same time as the real one. The drift and volatility are the trailing
 values in `roll.plan`.

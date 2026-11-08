@@ -23,18 +23,18 @@ You can also paste this file's contents into the Canvas HTML editor.
 
 <p>
   A covered call fund owns shares and a cash account, and every month sells
-  one call contract for every 100 shares it owns. The premiums go into its
-  cash and offset share losses, and the calls give up gains above the strike.
+  one call contract for every 100 shares it owns. The premiums go into the
+  fund's cash and offset share losses, and the calls give up gains above the strike.
   In PS5 you run such a fund twice for each of
   29 stocks and funds: first in a model, simulating the share price with
   geometric Brownian motion and pricing the calls on the binomial tree as in
-  the course example, and then in history, replaying 203 real trades,
+  the course example, and then on 203 real trades,
   entered from April to October 2026, at their market prices. You compare the fund's
-  growth rate with that of holding the shares (the same shares and cash,
+  growth rate with the growth rate of holding the shares (the same shares and cash,
   selling no calls), SPY, and cash, and ask how well the
-  model's promise matched what happened. The Advanced track adds a collar
+  model's prediction matched what happened. The Advanced track adds a collar
   fund, which also buys a put each month. You are graded on correct
-  calculations and interpretation, never on whether the fund wins.
+  calculations and interpretation, never on whether the fund beats holding the shares.
 </p>
 
 <h3>Download and instructions</h3>
@@ -73,7 +73,7 @@ You can also paste this file's contents into the Canvas HTML editor.
   questions in <code style="color: #c7254e; background-color: #f5f5f5; padding: 2px 4px; border-radius: 3px; font-family: Menlo, Monaco, Consolas, 'Courier New', monospace; font-size: 90%;">responses</code> (Standard.md or Advanced.md). Keep the supplied docstrings and answer
   markers: the hidden <code style="color: #c7254e; background-color: #f5f5f5; padding: 2px 4px; border-radius: 3px; font-family: Menlo, Monaco, Consolas, 'Courier New', monospace; font-size: 90%;">&lt;!-- answer-N:start --&gt;</code> and
   <code style="color: #c7254e; background-color: #f5f5f5; padding: 2px 4px; border-radius: 3px; font-family: Menlo, Monaco, Consolas, 'Courier New', monospace; font-size: 90%;">&lt;!-- answer-N:end --&gt;</code> comments that surround each answer
-  in the response file. Replace only the TODO line between them.
+  in the response file. Replace only the TODO line between the two comments.
   Put helper functions in separate files under <code style="color: #c7254e; background-color: #f5f5f5; padding: 2px 4px; border-radius: 3px; font-family: Menlo, Monaco, Consolas, 'Courier New', monospace; font-size: 90%;">src</code> and load them
   from <code style="color: #c7254e; background-color: #f5f5f5; padding: 2px 4px; border-radius: 3px; font-family: Menlo, Monaco, Consolas, 'Courier New', monospace; font-size: 90%;">Include.jl</code>.
 </p>
@@ -97,7 +97,7 @@ You can also paste this file's contents into the Canvas HTML editor.
 <pre style="display: block; padding: 10px; margin: 0 0 10px; color: #333333; background-color: #f5f5f5; border: 1px solid #cccccc; border-radius: 4px; font-family: Menlo, Monaco, Consolas, 'Courier New', monospace; font-size: 13px; line-height: 1.5; white-space: pre-wrap;"><code style="color: #333333; background-color: #f5f5f5; padding: 0; font-family: inherit; font-size: inherit;">julia --project=. --startup-file=no -e 'using Pkg; Pkg.instantiate()'</code></pre>
 
 <p>
-  After saving your code, run this command to check it and generate the
+  After saving your code, run this command to check your code and generate the
   report:
 </p>
 
@@ -105,7 +105,7 @@ You can also paste this file's contents into the Canvas HTML editor.
 
 <p>
   The checker runs the 12 Standard or 20 Advanced checks that the rubric
-  scores. It then <strong>calls your functions on every ticker and writes
+  scores. The checker then <strong>calls your functions on every ticker and writes
   the report</strong> to results/Report.md; there is no separate report
   command. Unfinished
   calculations show <code style="color: #c7254e; background-color: #f5f5f5; padding: 2px 4px; border-radius: 3px; font-family: Menlo, Monaco, Consolas, 'Courier New', monospace; font-size: 90%;">UNAVAILABLE</code>,
@@ -116,10 +116,10 @@ You can also paste this file's contents into the Canvas HTML editor.
 
 <p>
   Save your answers and run the same command again before submitting.
-  It also reports any supplied docstrings you removed and any unfinished
+  The checker also reports any supplied docstrings you removed and any unfinished
   answers, and creates
   <code style="color: #c7254e; background-color: #f5f5f5; padding: 2px 4px; border-radius: 3px; font-family: Menlo, Monaco, Consolas, 'Courier New', monospace; font-size: 90%;">MANIFEST.txt</code>,
-  but it does <strong>not</strong> upload anything to Canvas.
+  but the checker does <strong>not</strong> upload anything to Canvas.
   If you pass every check, the teaching team reviews your code, docstrings,
   comments, and answers and awards a 3 or 4. Passing more than half but not
   all of the checks earns a 2; a 3 or 4 requires passing every check.
@@ -149,7 +149,7 @@ You can also paste this file's contents into the Canvas HTML editor.
   even if your work is incomplete or tests fail.</strong>
   If you cannot run the checker, submit without <code style="color: #c7254e; background-color: #f5f5f5; padding: 2px 4px; border-radius: 3px; font-family: Menlo, Monaco, Consolas, 'Courier New', monospace; font-size: 90%;">MANIFEST.txt</code>.
   A missing, empty, or unreadable submission receives a <strong>Frozen Zero</strong>:
-  it cannot be revised for credit or earn a Magic Point.
+  that submission cannot be revised for credit or earn a Magic Point.
 </p>
 
 <h3>Revisions</h3>
@@ -181,7 +181,7 @@ You can also paste this file's contents into the Canvas HTML editor.
 
 <p>
   The reference solution will be released after the initial deadline.
-  Use it to understand errors and debug your own work, but do not copy it.
-  Copying it results in a score of 0 for PS5 that revisions cannot change.
+  Use the solution to understand errors and debug your own work, but do not copy the solution.
+  Copying results in a score of 0 for PS5 that revisions cannot change.
   These rules also apply to revisions.
 </p>

@@ -3,5 +3,5 @@ instructor/ export-ignore
 .github/ export-ignore
 AGENTS.md export-ignore
 
-# Keep settings files on LF so their fingerprint does not change on Windows checkouts.
+# Keep settings files on LF so their SHA-256 hash does not change on Windows checkouts.
 *.toml text eol=lf

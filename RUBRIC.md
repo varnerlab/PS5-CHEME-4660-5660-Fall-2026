@@ -19,7 +19,7 @@ at most 2. Standard cutoffs are 1–6 checks for score 1 and 7–11 for score 2;
 Advanced cutoffs are 1–10 and 11–19. On either track, passing every check
 gives a 3 or a 4, depending on the requirements for a 4.
 
-Checks run separately, so an unfinished function does not block the others.
+Checks run separately, so an unfinished function does not block the checks of the other functions.
 Failed checks do not cause a Frozen Zero: a readable ZIP with attempted work by
 the deadline still qualifies for revisions.
 
@@ -46,12 +46,12 @@ the deadline still qualifies for revisions.
   files under `src` through `Include.jl`.
 - **Written work:** Answer every lettered part of all three questions in the
   selected response file with the requested numbers, units, and reasoning.
-  Include the prediction and its reconsideration. Cite selected values rather
-  than reproducing the tables. Give growth rates in 1/yr. Distinguish the
-  model's promise (Study 1) from what happened (Study 2). Base your conclusions
-  on the mid-price results, and use the bid results only as a comparison. For
-  Advanced, compare the collar fund with the covered call fund and with holding the
-  shares and the same cash.
+  Include the prediction and say whether the prediction was right. Cite selected
+  values rather than reproducing the tables. Give growth rates in 1/yr.
+  Distinguish the model's prediction (Study 1) from what happened (Study 2). Base
+  your conclusions on the mid-price results, and use the bid results only as a
+  comparison. For Advanced, compare the collar fund with the covered call fund
+  and with holding the shares and the same cash.
 - **Finished work:** Remove completed TODOs and starter errors from the
   selected track's source and response files. Leave the other track unchanged.
 
@@ -92,7 +92,7 @@ Point.
 You may discuss ideas and use course materials, books, documentation, the
 internet, and AI tools. Submit your own work. Do not share code or solutions.
 
-The reference solution will be released after the initial deadline. Use it
-to understand errors and debug your work, but do not copy it. Copying it
-results in a score of 0 for PS5 that revisions cannot change. These rules
+The reference solution will be released after the initial deadline. Use the
+solution to understand errors and debug your work, but do not copy the
+solution. Copying results in a score of 0 for PS5 that revisions cannot change. These rules
 also apply to revisions.

@@ -53,7 +53,7 @@ this as a setup error.
 function clear_previous_results(root::String)::Nothing
 
     # Remove each generated file that exists -
-    for name in ("model.csv", "strikes.csv", "history.csv", "summary.csv", "promise.csv", "Report.md")
+    for name in ("model.csv", "strikes.csv", "history.csv", "summary.csv", "simulation_versus_real.csv", "Report.md")
         path = joinpath(root, "results", name);
         if isfile(path)
             rm(path);
@@ -223,7 +223,7 @@ function write_manifest(path::String, record::NamedTuple)::Nothing
     println(io, "public tests passed: $(record.passed)/$(record.total)");
     println(io, "required function docstrings present: ", record.documented);
     println(io, "three answer blocks contain text without TODO: ", record.answers);
-    println(io, "local rubric feedback: ", record.feedback);
+    println(io, "local rubric score: ", record.score);
     println(io, "defaults.toml changed: ", record.defaults_changed);
     if record.defaults_changed
         println(io, "defaults.toml sha256: ", record.defaults_hash);
@@ -338,14 +338,14 @@ function main(setup::NamedTuple)::Nothing
     end
     answers = track_known && isempty(answer_issues);
 
-    # The local rubric feedback -
+    # The local rubric score -
     if all_passed
-        feedback = "pending completion review";
+        score = "teaching team review pending";
     else
-        feedback = string(rubric_score(results; tests_ran=tests_ran, completion=false));
+        score = string(rubric_score(results; tests_ran=tests_ran, completion=false));
     end
 
-    # Compare the settings file with the shipped copy (config_hash needs a loaded Include.jl) -
+    # Compare the settings file with the supplied copy (config_hash needs a loaded Include.jl) -
     defaults_path = joinpath(_CHECK_ROOT, "config", "defaults.toml");
     defaults_hash = "MISSING";
     defaults_changed = false;
@@ -356,7 +356,7 @@ function main(setup::NamedTuple)::Nothing
         defaults_changed = defaults_hash != PS5_DEFAULTS_SHA256;
     end
     if defaults_changed
-        print_terminal_text("Warning: config/defaults.toml differs from the shipped copy; the report uses your edited settings, but grading uses the shipped file.");
+        print_terminal_text("Warning: config/defaults.toml differs from the supplied copy; the report uses your edited settings, but grading uses the supplied file.");
     end
 
     # Calculate the report results -
@@ -375,7 +375,7 @@ function main(setup::NamedTuple)::Nothing
     record_path = joinpath(setup.output_root, "MANIFEST.txt");
     record = (track = track, source_name = source_name, solution = setup.solution, tests_ran = tests_ran,
         passed = passed, total = length(results), documented = documented, answers = answers,
-        feedback = feedback, defaults_changed = defaults_changed, defaults_hash = defaults_hash,
+        score = score, defaults_changed = defaults_changed, defaults_hash = defaults_hash,
         detail = setup.detail, source_path = setup.source_path);
     write_manifest(record_path, record);
 
@@ -419,9 +419,9 @@ function main(setup::NamedTuple)::Nothing
         print_terminal_text("Answers were not checked. Fix the setup error above and run the checker again.");
     end
 
-    # The local rubric feedback, and what to do next -
+    # The local rubric score, and what to do next -
     println();
-    println("Local rubric feedback: ", feedback);
+    println("Local rubric score: ", score);
     if all_passed
         println("The teaching team must still review your code, documentation, and answers.");
     end

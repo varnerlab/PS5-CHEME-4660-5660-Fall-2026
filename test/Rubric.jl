@@ -1,4 +1,4 @@
-# SHA-256 of the shipped config/defaults.toml; the checker warns when a student edits the file -
+# SHA-256 of the supplied config/defaults.toml; the checker warns when a student edits the file -
 const PS5_DEFAULTS_SHA256 = "0b16684cb67fcf1f9006852b9d4c65e0369a638132420f3ab1a5fcd4355fab4c";
 
 """
@@ -296,7 +296,7 @@ end
 """
     rubric_score(results; tests_ran, completion) -> Int
 
-Calculate the rubric score from the check results and completion review.
+Calculate the rubric score from the check results and the teaching team's review.
 
 ### Arguments
 
@@ -316,7 +316,7 @@ When all checks pass, return 3 if `completion` is `false` and 4 if it is `true`.
 
 Standard has 12 checks: passing 1–6 gives 1, 7–11 gives 2, and all 12 gives
 3 or 4. Advanced has 20 checks: passing 1–10 gives 1, 11–19 gives 2, and all
-20 gives 3 or 4. The local checker prints pending review when all checks pass.
+20 gives 3 or 4. The local checker prints that the teaching team review is pending when all checks pass.
 It leaves the choice between 3 and 4 to the teaching team.
 """
 function rubric_score(results::AbstractVector{<:NamedTuple};

@@ -6,7 +6,7 @@
   `docs/PS5-Mathematical-Companion.tex`.
 - Organize the assignment around its central question: does a covered call
   fund beat holding the shares, and what does it give up? Study 1 is the
-  model's promise, Study 2 what happened, Study 3 the conclusion. Preserve the
+  model's prediction, Study 2 what happened, Study 3 the conclusion. Preserve the
   agreed Standard (covered call fund) and Advanced (collar fund) scope.
 - Every student function copies a cell of the course examples "A Covered Call
   Fund on a Hypothetical Stock" or "A Protective Collar on SPY" (L11b) and uses
